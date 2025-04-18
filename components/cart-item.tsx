@@ -69,7 +69,7 @@ export function CartItem({ item }: CartItemProps) {
             </Button>
           </div>
           <div className="text-right">
-            <p className="font-medium">${(item.price * item.quantity).toFixed(2)}</p>
+            <p className="font-medium">₦{(item.price * item.quantity).toFixed(2)}</p>
             <Button
               variant="ghost"
               size="sm"
