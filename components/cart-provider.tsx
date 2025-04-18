@@ -1,6 +1,6 @@
 "use client"
 
-import { createContext, useState, useEffect, type ReactNode } from "react"
+import { createContext, useState, useEffect, type ReactNode, useRef } from "react"
 import type { CartItem } from "@/types"
 import { toast } from "@/components/ui/use-toast"
 import { createClient } from "@/lib/supabase/client"
@@ -21,6 +21,7 @@ export const CartContext = createContext<CartContextType | undefined>(undefined)
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([])
   const { user } = useAuth()
+  const isMountedRef = useRef(true)
 
   // Load cart from localStorage or Supabase on mount
   useEffect(() => {
@@ -31,7 +32,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
           const supabase = createClient()
           const { data } = await supabase.from("carts").select("items").eq("user_id", user.id).single()
 
-          if (data?.items) {
+          if (data?.items && isMountedRef.current) {
             setItems(data.items)
             return
           }
@@ -41,17 +42,23 @@ export function CartProvider({ children }: { children: ReactNode }) {
       }
 
       // Fall back to localStorage if no user or no Supabase cart
-      const storedCart = localStorage.getItem("cart")
-      if (storedCart) {
-        try {
-          setItems(JSON.parse(storedCart))
-        } catch (error) {
-          console.error("Failed to parse cart from localStorage:", error)
+      if (isMountedRef.current) {
+        const storedCart = localStorage.getItem("cart")
+        if (storedCart) {
+          try {
+            setItems(JSON.parse(storedCart))
+          } catch (error) {
+            console.error("Failed to parse cart from localStorage:", error)
+          }
         }
       }
     }
 
     loadCart()
+
+    return () => {
+      isMountedRef.current = false
+    }
   }, [user])
 
   // Save cart to localStorage and Supabase whenever it changes
@@ -80,9 +87,19 @@ export function CartProvider({ children }: { children: ReactNode }) {
         }
       }
 
-      saveToSupabase()
+      // Only save to Supabase if the component is still mounted
+      if (isMountedRef.current) {
+        saveToSupabase()
+      }
     }
   }, [items, user])
+
+  // Reset the mounted ref when the component unmounts
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false
+    }
+  }, [])
 
   const addItem = (newItem: CartItem) => {
     setItems((prevItems) => {
