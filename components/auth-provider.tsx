@@ -18,37 +18,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
-
-  const subscription = useRef<any>(null)
+  const subscriptionRef = useRef<{ unsubscribe: () => void } | null>(null)
+  const supabaseRef = useRef<ReturnType<typeof createClient> | null>(null)
 
   // Use try-catch to handle potential initialization errors
-  let supabase
-  try {
-    supabase = createClient()
-  } catch (error) {
-    console.error("Failed to initialize Supabase client:", error)
-    // Return a minimal provider that doesn't break the app
-    return (
-      <AuthContext.Provider
-        value={{
-          user: null,
-          signOut: async () => {},
-          isLoading: false,
-        }}
-      >
-        {children}
-      </AuthContext.Provider>
-    )
-  }
+  useEffect(() => {
+    try {
+      supabaseRef.current = createClient()
+    } catch (error) {
+      console.error("Failed to initialize Supabase client:", error)
+      // Return a minimal provider that doesn't break the app
+      return
+    }
+  }, [])
 
   useEffect(() => {
+    // Flag to prevent state updates after component unmount
     let isMounted = true
 
     const getUser = async () => {
+      if (!supabaseRef.current) return
       try {
         const {
           data: { session },
-        } = await supabase.auth.getSession()
+        } = await supabaseRef.current.auth.getSession()
+
         if (isMounted) {
           setUser(session?.user ?? null)
           setIsLoading(false)
@@ -61,61 +55,95 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     }
 
-    getUser()
+    // Set up auth state change listener
+    const setupAuthListener = async () => {
+      if (!supabaseRef.current) return
+      try {
+        const { data } = supabaseRef.current.auth.onAuthStateChange(async (_event, session) => {
+          if (!isMounted) return
 
-    try {
-      subscription.current = supabase.auth.onAuthStateChange(async (_event, session) => {
-        const currentUser = session?.user ?? null
-        if (isMounted) {
+          const currentUser = session?.user ?? null
           setUser(currentUser)
-        }
 
-        // If user just signed in, check if they have a profile
-        if (currentUser && (_event === "SIGNED_IN" || _event === "USER_UPDATED")) {
-          try {
-            // First check if profile exists
-            const { data, error } = await supabase.from("profiles").select("*").eq("id", currentUser.id).single()
+          // If user just signed in, check if they have a profile
+          if (currentUser && (_event === "SIGNED_IN" || _event === "USER_UPDATED")) {
+            try {
+              // First check if profile exists
+              const { data, error } = await supabaseRef.current
+                .from("profiles")
+                .select("*")
+                .eq("id", currentUser.id)
+                .single()
 
-            // If no profile exists or there was an error, create one
-            if (!data || error) {
-              console.log("Creating profile for user:", currentUser.id)
+              // If no profile exists or there was an error, create one
+              if (!data || error) {
+                console.log("Creating profile for user:", currentUser.id)
 
-              // Get user metadata
-              const fullName = currentUser.user_metadata.full_name || currentUser.user_metadata.name || ""
+                // Get user metadata
+                const fullName = currentUser.user_metadata.full_name || currentUser.user_metadata.name || ""
 
-              await supabase.from("profiles").insert({
-                id: currentUser.id,
-                full_name: fullName,
-                email: currentUser.email,
-                // Don't set is_admin here - that should be done manually
-              })
+                await supabaseRef.current.from("profiles").insert({
+                  id: currentUser.id,
+                  full_name: fullName,
+                  email: currentUser.email,
+                  // Don't set is_admin here - that should be done manually
+                })
+              }
+            } catch (error) {
+              console.error("Error checking/creating profile:", error)
             }
-          } catch (error) {
-            console.error("Error checking/creating profile:", error)
           }
-        }
 
-        router.refresh()
-      })
-    } catch (error) {
-      console.error("Error setting up auth state change listener:", error)
-    }
+          // Only refresh the router if the component is still mounted
+          if (isMounted) {
+            router.refresh()
+          }
+        })
 
-    return () => {
-      isMounted = false
-      if (subscription.current && subscription.current.unsubscribe) {
-        subscription.current.unsubscribe()
+        subscriptionRef.current = data
+      } catch (error) {
+        console.error("Error setting up auth listener:", error)
       }
     }
-  }, [router, supabase])
+
+    // Initialize
+    getUser()
+    setupAuthListener()
+
+    // Cleanup function
+    return () => {
+      isMounted = false
+
+      // Unsubscribe from auth changes
+      if (subscriptionRef.current) {
+        subscriptionRef.current.unsubscribe()
+        subscriptionRef.current = null
+      }
+    }
+  }, [router])
 
   const signOut = async () => {
+    if (!supabaseRef.current) return
     try {
-      await supabase.auth.signOut()
+      await supabaseRef.current.auth.signOut()
       router.push("/")
     } catch (error) {
       console.error("Error signing out:", error)
     }
+  }
+
+  if (!supabaseRef.current) {
+    return (
+      <AuthContext.Provider
+        value={{
+          user: null,
+          signOut: async () => {},
+          isLoading: false,
+        }}
+      >
+        {children}
+      </AuthContext.Provider>
+    )
   }
 
   return <AuthContext.Provider value={{ user, signOut, isLoading }}>{children}</AuthContext.Provider>
