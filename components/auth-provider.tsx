@@ -18,23 +18,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
-  const subscriptionRef = useRef<{ unsubscribe: () => void } | null>(null)
   const supabaseRef = useRef<ReturnType<typeof createClient> | null>(null)
 
-  // Use try-catch to handle potential initialization errors
+  // Initialize Supabase client
   useEffect(() => {
     try {
       supabaseRef.current = createClient()
     } catch (error) {
       console.error("Failed to initialize Supabase client:", error)
-      // Return a minimal provider that doesn't break the app
-      return
     }
   }, [])
 
+  // Handle auth state and cleanup
   useEffect(() => {
     // Flag to prevent state updates after component unmount
     let isMounted = true
+    let authListener: { unsubscribe: () => void } | null = null
 
     const getUser = async () => {
       if (!supabaseRef.current) return
@@ -100,7 +99,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
         })
 
-        subscriptionRef.current = data
+        // Store the listener for cleanup
+        authListener = data.subscription
       } catch (error) {
         console.error("Error setting up auth listener:", error)
       }
@@ -115,9 +115,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isMounted = false
 
       // Unsubscribe from auth changes
-      if (subscriptionRef.current) {
-        subscriptionRef.current.unsubscribe()
-        subscriptionRef.current = null
+      if (authListener) {
+        try {
+          authListener.unsubscribe()
+        } catch (error) {
+          console.error("Error unsubscribing from auth listener:", error)
+        }
       }
     }
   }, [router])
