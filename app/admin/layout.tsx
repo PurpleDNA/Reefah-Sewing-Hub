@@ -21,7 +21,6 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   if (!profile?.is_admin) {
     redirect("/")
   }
-
   return (
     <div className="flex min-h-screen">
       <AdminSidebar />
