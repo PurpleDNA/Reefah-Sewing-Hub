@@ -75,7 +75,7 @@ export function Hero() {
                 />
               </svg>
             </div>
-            <h3 className="font-medium">Fast Delivery</h3>
+            <h3 className="text-sm text-gray-500">Fast Delivery</h3>
           </div>
           <div className="bg-white p-4 rounded-lg shadow-sm text-center">
             <div className="bg-blue-100 h-12 w-12 rounded-full flex items-center justify-center mx-auto mb-3">
@@ -94,7 +94,7 @@ export function Hero() {
                 />
               </svg>
             </div>
-            <h3 className="font-medium">100% Secure</h3>
+            <h3 className="text-sm text-gray-500">100% Secure</h3>
           </div>
           <div className="bg-white p-4 rounded-lg shadow-sm text-center">
             <div className="bg-green-100 h-12 w-12 rounded-full flex items-center justify-center mx-auto mb-3">
@@ -113,7 +113,7 @@ export function Hero() {
                 />
               </svg>
             </div>
-            <h3 className="font-medium">Best Prices</h3>
+            <h3 className="text-sm text-gray-500">Best Prices</h3>
           </div>
           <div className="bg-white p-4 rounded-lg shadow-sm text-center">
             <div className="bg-purple-100 h-12 w-12 rounded-full flex items-center justify-center mx-auto mb-3">
