@@ -38,7 +38,6 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     // Redirect to home since the new profile isn't an admin
     redirect("/")
   }
-
   // Check if the user is an admin
   if (!profile.is_admin) {
     console.log("User is not an admin")
