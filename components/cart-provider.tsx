@@ -22,35 +22,47 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([])
   const { user } = useAuth()
   const isMountedRef = useRef(true)
+  const [isInitialized, setIsInitialized] = useState(false)
 
   // Load cart from localStorage or Supabase on mount
   useEffect(() => {
     const loadCart = async () => {
-      if (user) {
-        // If user is logged in, try to load cart from Supabase
-        try {
-          const supabase = createClient()
-          const { data } = await supabase.from("carts").select("items").eq("user_id", user.id).single()
-
-          if (data?.items && isMountedRef.current) {
-            setItems(data.items)
-            return
-          }
-        } catch (error) {
-          console.error("Failed to load cart from Supabase:", error)
-        }
-      }
-
-      // Fall back to localStorage if no user or no Supabase cart
-      if (isMountedRef.current) {
-        const storedCart = localStorage.getItem("cart")
-        if (storedCart) {
+      try {
+        if (user) {
+          // If user is logged in, try to load cart from Supabase
           try {
-            setItems(JSON.parse(storedCart))
+            const supabase = createClient()
+            const { data, error } = await supabase.from("carts").select("items").eq("user_id", user.id).single()
+
+            console.log("Loading cart from Supabase:", { data, error, userId: user.id })
+
+            if (data?.items && isMountedRef.current) {
+              setItems(data.items)
+              setIsInitialized(true)
+              return
+            }
           } catch (error) {
-            console.error("Failed to parse cart from localStorage:", error)
+            console.error("Failed to load cart from Supabase:", error)
           }
         }
+
+        // Fall back to localStorage if no user or no Supabase cart
+        if (isMountedRef.current) {
+          const storedCart = localStorage.getItem("cart")
+          if (storedCart) {
+            try {
+              const parsedCart = JSON.parse(storedCart)
+              console.log("Loading cart from localStorage:", parsedCart)
+              setItems(parsedCart)
+            } catch (error) {
+              console.error("Failed to parse cart from localStorage:", error)
+            }
+          }
+          setIsInitialized(true)
+        }
+      } catch (error) {
+        console.error("Error in loadCart:", error)
+        setIsInitialized(true)
       }
     }
 
@@ -63,8 +75,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   // Save cart to localStorage and Supabase whenever it changes
   useEffect(() => {
+    if (!isInitialized) return
+
     // Always save to localStorage for quick access
-    localStorage.setItem("cart", JSON.stringify(items))
+    try {
+      localStorage.setItem("cart", JSON.stringify(items))
+      console.log("Saved cart to localStorage:", items)
+    } catch (error) {
+      console.error("Failed to save cart to localStorage:", error)
+    }
 
     // If user is logged in, also save to Supabase
     if (user) {
@@ -73,14 +92,31 @@ export function CartProvider({ children }: { children: ReactNode }) {
           const supabase = createClient()
 
           // Check if cart exists
-          const { data } = await supabase.from("carts").select("id").eq("user_id", user.id).single()
+          const { data, error } = await supabase.from("carts").select("id").eq("user_id", user.id).single()
+
+          console.log("Checking if cart exists:", { data, error, userId: user.id })
 
           if (data) {
             // Update existing cart
-            await supabase.from("carts").update({ items, updated_at: new Date().toISOString() }).eq("user_id", user.id)
+            const { error: updateError } = await supabase
+              .from("carts")
+              .update({ items, updated_at: new Date().toISOString() })
+              .eq("user_id", user.id)
+
+            console.log("Updated cart in Supabase:", { updateError, items })
+
+            if (updateError) {
+              console.error("Failed to update cart in Supabase:", updateError)
+            }
           } else {
             // Create new cart
-            await supabase.from("carts").insert({ user_id: user.id, items })
+            const { error: insertError } = await supabase.from("carts").insert({ user_id: user.id, items })
+
+            console.log("Created new cart in Supabase:", { insertError, items })
+
+            if (insertError) {
+              console.error("Failed to create cart in Supabase:", insertError)
+            }
           }
         } catch (error) {
           console.error("Failed to save cart to Supabase:", error)
@@ -92,7 +128,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         saveToSupabase()
       }
     }
-  }, [items, user])
+  }, [items, user, isInitialized])
 
   // Reset the mounted ref when the component unmounts
   useEffect(() => {
@@ -115,6 +151,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
         return [...prevItems, newItem]
       }
     })
+
+    toast({
+      description: `${newItem.name} added to cart`,
+    })
   }
 
   const updateItemQuantity = (id: string, quantity: number) => {
@@ -135,6 +175,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const clearCart = () => {
     setItems([])
+    localStorage.removeItem("cart")
+
+    if (user) {
+      try {
+        const supabase = createClient()
+        supabase.from("carts").update({ items: [] }).eq("user_id", user.id)
+      } catch (error) {
+        console.error("Failed to clear cart in Supabase:", error)
+      }
+    }
   }
 
   const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0)

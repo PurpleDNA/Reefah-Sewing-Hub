@@ -35,11 +35,26 @@ export default function Header() {
   // Check if user is admin
   useEffect(() => {
     const checkAdminStatus = async () => {
-      if (user) {
+      if (!user) {
+        setIsAdmin(false)
+        return
+      }
+
+      try {
         const supabase = createClient()
-        const { data } = await supabase.from("profiles").select("is_admin").eq("id", user.id).single()
+        const { data, error } = await supabase.from("profiles").select("is_admin").eq("id", user.id).single()
+
+        console.log("Admin check result:", { data, error, userId: user.id })
+
+        if (error) {
+          console.error("Error checking admin status:", error)
+          setIsAdmin(false)
+          return
+        }
+
         setIsAdmin(!!data?.is_admin)
-      } else {
+      } catch (error) {
+        console.error("Failed to check admin status:", error)
         setIsAdmin(false)
       }
     }
@@ -104,22 +119,6 @@ export default function Header() {
                 {item.name}
               </Link>
             ))}
-
-            {/* Admin Button - Only visible for admin users */}
-            {isAdmin && (
-              <Link
-                href="/admin"
-                className={cn(
-                  "flex items-center gap-1.5 text-sm font-medium transition-colors",
-                  pathname.startsWith("/admin")
-                    ? "text-green-600 dark:text-green-400"
-                    : "text-foreground hover:text-green-600 dark:hover:text-green-400",
-                )}
-              >
-                <ShieldCheck className="h-4 w-4" />
-                Admin
-              </Link>
-            )}
           </nav>
 
           {/* Desktop Actions */}
@@ -130,19 +129,16 @@ export default function Header() {
 
             <ThemeToggle />
 
-            {/* Admin Button (Alternative position) - Only visible for admin users */}
+            {/* Admin Button - Only visible for admin users */}
             {isAdmin && (
               <Button
                 variant="outline"
                 size="sm"
                 asChild
-                className={cn(
-                  "gap-1.5 border-green-600 text-green-600 hover:bg-green-50 hover:text-green-700",
-                  "dark:border-green-400 dark:text-green-400 dark:hover:bg-green-950 dark:hover:text-green-300",
-                )}
+                className="bg-green-600 text-white hover:bg-green-700 hover:text-white"
               >
                 <Link href="/admin">
-                  <ShieldCheck className="h-4 w-4" />
+                  <ShieldCheck className="h-4 w-4 mr-2" />
                   Admin
                 </Link>
               </Button>
@@ -202,10 +198,7 @@ export default function Header() {
                 variant="outline"
                 size="sm"
                 asChild
-                className={cn(
-                  "gap-1.5 border-green-600 text-green-600 hover:bg-green-50 hover:text-green-700",
-                  "dark:border-green-400 dark:text-green-400 dark:hover:bg-green-950 dark:hover:text-green-300",
-                )}
+                className="bg-green-600 text-white hover:bg-green-700 hover:text-white"
               >
                 <Link href="/admin">
                   <ShieldCheck className="h-4 w-4" />
@@ -289,10 +282,7 @@ export default function Header() {
               {isAdmin && (
                 <Link
                   href="/admin"
-                  className={cn(
-                    "px-4 py-2 text-sm font-medium transition-colors hover:bg-muted flex items-center gap-2",
-                    pathname.startsWith("/admin") ? "text-green-600 dark:text-green-400" : "text-foreground",
-                  )}
+                  className="px-4 py-2 text-sm font-medium bg-green-600 text-white rounded-md flex items-center gap-2"
                   onClick={() => setIsMenuOpen(false)}
                 >
                   <ShieldCheck className="h-4 w-4" />

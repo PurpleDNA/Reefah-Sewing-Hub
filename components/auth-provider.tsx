@@ -18,12 +18,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
-  const supabaseRef = useRef<ReturnType<typeof createClient> | null>(null)
+  const supabaseRef = useRef<any>(null)
 
   // Initialize Supabase client
   useEffect(() => {
     try {
-      supabaseRef.current = createClient()
+      // Create the client only once
+      if (!supabaseRef.current) {
+        supabaseRef.current = createClient()
+      }
     } catch (error) {
       console.error("Failed to initialize Supabase client:", error)
     }
@@ -126,27 +129,46 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [router])
 
   const signOut = async () => {
-    if (!supabaseRef.current) return
     try {
+      if (!supabaseRef.current) {
+        supabaseRef.current = createClient()
+      }
+
+      // Clear local storage cart
+      localStorage.removeItem("cart")
+
+      // Sign out from Supabase
       await supabaseRef.current.auth.signOut()
+
+      // Clear user state
+      setUser(null)
+
+      // Redirect to home page
       router.push("/")
+      router.refresh()
     } catch (error) {
       console.error("Error signing out:", error)
     }
   }
 
+  // Provide a fallback if Supabase client initialization failed
   if (!supabaseRef.current) {
-    return (
-      <AuthContext.Provider
-        value={{
-          user: null,
-          signOut: async () => {},
-          isLoading: false,
-        }}
-      >
-        {children}
-      </AuthContext.Provider>
-    )
+    try {
+      supabaseRef.current = createClient()
+    } catch (error) {
+      console.error("Failed to initialize Supabase client in fallback:", error)
+      return (
+        <AuthContext.Provider
+          value={{
+            user: null,
+            signOut: async () => {},
+            isLoading: false,
+          }}
+        >
+          {children}
+        </AuthContext.Provider>
+      )
+    }
   }
 
   return <AuthContext.Provider value={{ user, signOut, isLoading }}>{children}</AuthContext.Provider>

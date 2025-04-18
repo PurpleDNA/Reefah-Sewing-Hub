@@ -4,10 +4,10 @@ import { createClient } from "@/lib/supabase/server"
 import AdminSidebar from "@/components/admin/sidebar"
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  const supabase = createClient()
-
   try {
-    // Check if user is authenticated and is an admin
+    const supabase = createClient()
+
+    // Check if user is authenticated
     const {
       data: { session },
     } = await supabase.auth.getSession()
@@ -24,24 +24,20 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       .eq("id", session.user.id)
       .single()
 
-    // Log the profile data and error for debugging
-    console.log("Admin check for user:", session.user.id)
-    console.log("Profile data:", profile)
-    console.log("Error:", error)
+    console.log("Admin check for user:", session.user.id, "Profile:", profile, "Error:", error)
 
     // If there's an error or the profile doesn't exist, create it
     if (error || !profile) {
+      console.log("Profile not found or error, creating profile")
+
       // Create a profile for the user if it doesn't exist
-      const { error: insertError } = await supabase.from("profiles").insert({
+      await supabase.from("profiles").insert({
         id: session.user.id,
         email: session.user.email,
         full_name: session.user.user_metadata.full_name || session.user.email,
         is_admin: false, // Default to non-admin
       })
 
-      console.log("Created new profile, insert error:", insertError)
-
-      // Redirect to home since the new profile isn't an admin
       console.log("New user is not an admin, redirecting to home")
       redirect("/")
     }
@@ -52,6 +48,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       redirect("/")
     }
 
+    console.log("User is admin, rendering admin layout")
     return (
       <div className="flex min-h-screen">
         <AdminSidebar />

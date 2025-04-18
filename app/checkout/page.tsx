@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label"
 import { Card } from "@/components/ui/card"
 import { createClient } from "@/lib/supabase/client"
 import { toast } from "@/components/ui/use-toast"
-import { CheckCircle2 } from "lucide-react"
+import { CheckCircle2, Loader2 } from "lucide-react"
 
 export default function CheckoutPage() {
   const { items, total, clearCart } = useCart()
@@ -20,6 +20,7 @@ export default function CheckoutPage() {
   const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isSuccess, setIsSuccess] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const [formData, setFormData] = useState({
     firstName: "",
@@ -38,11 +39,13 @@ export default function CheckoutPage() {
       if (user) {
         try {
           const supabase = createClient()
-          const { data } = await supabase
+          const { data, error } = await supabase
             .from("profiles")
             .select("full_name, phone, address, city, state, postal_code")
             .eq("id", user.id)
             .single()
+
+          console.log("Loading user address:", { data, error })
 
           if (data) {
             const nameParts = (data.full_name || "").split(" ")
@@ -73,6 +76,7 @@ export default function CheckoutPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setError(null)
 
     if (items.length === 0) {
       toast({
@@ -90,7 +94,7 @@ export default function CheckoutPage() {
 
       // Save address to user profile if logged in
       if (user) {
-        await supabase
+        const { error: profileError } = await supabase
           .from("profiles")
           .update({
             full_name: `${formData.firstName} ${formData.lastName}`,
@@ -101,9 +105,21 @@ export default function CheckoutPage() {
             postal_code: formData.postalCode,
           })
           .eq("id", user.id)
+
+        console.log("Updated user profile:", { profileError })
+
+        if (profileError) {
+          console.error("Error updating profile:", profileError)
+        }
       }
 
       // Create order
+      console.log("Creating order with data:", {
+        user_id: user?.id,
+        total,
+        ...formData,
+      })
+
       const { data: order, error: orderError } = await supabase
         .from("orders")
         .insert({
@@ -122,7 +138,12 @@ export default function CheckoutPage() {
         .select()
         .single()
 
-      if (orderError) throw orderError
+      if (orderError) {
+        console.error("Order creation error:", orderError)
+        throw orderError
+      }
+
+      console.log("Order created:", order)
 
       // Create order items
       const orderItems = items.map((item) => ({
@@ -132,9 +153,14 @@ export default function CheckoutPage() {
         price: item.price,
       }))
 
+      console.log("Creating order items:", orderItems)
+
       const { error: itemsError } = await supabase.from("order_items").insert(orderItems)
 
-      if (itemsError) throw itemsError
+      if (itemsError) {
+        console.error("Order items error:", itemsError)
+        throw itemsError
+      }
 
       // Success!
       setIsSuccess(true)
@@ -144,11 +170,12 @@ export default function CheckoutPage() {
       setTimeout(() => {
         router.push("/")
       }, 5000)
-    } catch (error) {
+    } catch (error: any) {
       console.error("Checkout error:", error)
+      setError(error.message || "There was a problem processing your order. Please try again.")
       toast({
         title: "Checkout failed",
-        description: "There was a problem processing your order. Please try again.",
+        description: error.message || "There was a problem processing your order. Please try again.",
         variant: "destructive",
       })
     } finally {
@@ -180,6 +207,10 @@ export default function CheckoutPage() {
             <form onSubmit={handleSubmit}>
               <div className="space-y-6">
                 <h2 className="text-xl font-bold">Shipping Information</h2>
+
+                {error && (
+                  <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">{error}</div>
+                )}
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
@@ -235,7 +266,14 @@ export default function CheckoutPage() {
                 </div>
 
                 <Button type="submit" className="w-full" size="lg" disabled={isSubmitting}>
-                  {isSubmitting ? "Processing..." : "Place Order"}
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    "Place Order"
+                  )}
                 </Button>
               </div>
             </form>
