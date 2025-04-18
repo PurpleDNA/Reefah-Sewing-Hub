@@ -1,0 +1,277 @@
+"use client"
+
+import type React from "react"
+
+import { useState, useEffect } from "react"
+import { useCart } from "@/hooks/use-cart"
+import { useAuth } from "@/hooks/use-auth"
+import { useRouter } from "next/navigation"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Card } from "@/components/ui/card"
+import { createClient } from "@/lib/supabase/client"
+import { toast } from "@/components/ui/use-toast"
+import { CheckCircle2 } from "lucide-react"
+
+export default function CheckoutPage() {
+  const { items, total, clearCart } = useCart()
+  const { user } = useAuth()
+  const router = useRouter()
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isSuccess, setIsSuccess] = useState(false)
+
+  const [formData, setFormData] = useState({
+    firstName: "",
+    lastName: "",
+    email: user?.email || "",
+    phone: "",
+    address: "",
+    city: "",
+    state: "",
+    postalCode: "",
+  })
+
+  // Load saved address if user is logged in
+  useEffect(() => {
+    const loadUserAddress = async () => {
+      if (user) {
+        try {
+          const supabase = createClient()
+          const { data } = await supabase
+            .from("profiles")
+            .select("full_name, phone, address, city, state, postal_code")
+            .eq("id", user.id)
+            .single()
+
+          if (data) {
+            const nameParts = (data.full_name || "").split(" ")
+            setFormData({
+              firstName: nameParts[0] || "",
+              lastName: nameParts.slice(1).join(" ") || "",
+              email: user.email || "",
+              phone: data.phone || "",
+              address: data.address || "",
+              city: data.city || "",
+              state: data.state || "",
+              postalCode: data.postal_code || "",
+            })
+          }
+        } catch (error) {
+          console.error("Error loading user address:", error)
+        }
+      }
+    }
+
+    loadUserAddress()
+  }, [user])
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target
+    setFormData((prev) => ({ ...prev, [name]: value }))
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    if (items.length === 0) {
+      toast({
+        title: "Cart is empty",
+        description: "Please add items to your cart before checking out.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsSubmitting(true)
+
+    try {
+      const supabase = createClient()
+
+      // Save address to user profile if logged in
+      if (user) {
+        await supabase
+          .from("profiles")
+          .update({
+            full_name: `${formData.firstName} ${formData.lastName}`,
+            phone: formData.phone,
+            address: formData.address,
+            city: formData.city,
+            state: formData.state,
+            postal_code: formData.postalCode,
+          })
+          .eq("id", user.id)
+      }
+
+      // Create order
+      const { data: order, error: orderError } = await supabase
+        .from("orders")
+        .insert({
+          user_id: user?.id,
+          total: total,
+          first_name: formData.firstName,
+          last_name: formData.lastName,
+          email: formData.email,
+          phone: formData.phone,
+          address: formData.address,
+          city: formData.city,
+          state: formData.state,
+          postal_code: formData.postalCode,
+          status: "pending",
+        })
+        .select()
+        .single()
+
+      if (orderError) throw orderError
+
+      // Create order items
+      const orderItems = items.map((item) => ({
+        order_id: order.id,
+        product_id: item.id,
+        quantity: item.quantity,
+        price: item.price,
+      }))
+
+      const { error: itemsError } = await supabase.from("order_items").insert(orderItems)
+
+      if (itemsError) throw itemsError
+
+      // Success!
+      setIsSuccess(true)
+      clearCart()
+
+      // Redirect to success page after a delay
+      setTimeout(() => {
+        router.push("/")
+      }, 5000)
+    } catch (error) {
+      console.error("Checkout error:", error)
+      toast({
+        title: "Checkout failed",
+        description: "There was a problem processing your order. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  if (isSuccess) {
+    return (
+      <div className="container mx-auto px-4 py-16 text-center">
+        <CheckCircle2 className="mx-auto h-16 w-16 text-green-500 mb-4" />
+        <h2 className="text-2xl font-bold mb-2">Order Placed Successfully!</h2>
+        <p className="text-muted-foreground mb-8">
+          Thank you for your order. We'll send you a confirmation email shortly.
+        </p>
+        <Button asChild>
+          <a href="/">Return to Home</a>
+        </Button>
+      </div>
+    )
+  }
+
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="text-3xl font-bold mb-8">Checkout</h1>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2">
+          <Card className="p-6">
+            <form onSubmit={handleSubmit}>
+              <div className="space-y-6">
+                <h2 className="text-xl font-bold">Shipping Information</h2>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="firstName">First Name</Label>
+                    <Input
+                      id="firstName"
+                      name="firstName"
+                      value={formData.firstName}
+                      onChange={handleChange}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="lastName">Last Name</Label>
+                    <Input id="lastName" name="lastName" value={formData.lastName} onChange={handleChange} required />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input id="email" name="email" type="email" value={formData.email} onChange={handleChange} required />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Phone</Label>
+                  <Input id="phone" name="phone" type="tel" value={formData.phone} onChange={handleChange} required />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="address">Address</Label>
+                  <Input id="address" name="address" value={formData.address} onChange={handleChange} required />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="city">City</Label>
+                    <Input id="city" name="city" value={formData.city} onChange={handleChange} required />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="state">State</Label>
+                    <Input id="state" name="state" value={formData.state} onChange={handleChange} required />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="postalCode">Postal Code</Label>
+                    <Input
+                      id="postalCode"
+                      name="postalCode"
+                      value={formData.postalCode}
+                      onChange={handleChange}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <Button type="submit" className="w-full" size="lg" disabled={isSubmitting}>
+                  {isSubmitting ? "Processing..." : "Place Order"}
+                </Button>
+              </div>
+            </form>
+          </Card>
+        </div>
+
+        <div>
+          <Card className="p-6">
+            <h2 className="text-xl font-bold mb-4">Order Summary</h2>
+            <div className="space-y-4 mb-4">
+              {items.map((item) => (
+                <div key={item.id} className="flex justify-between">
+                  <span>
+                    {item.name} x {item.quantity}
+                  </span>
+                  <span>₦{(item.price * item.quantity).toLocaleString()}</span>
+                </div>
+              ))}
+            </div>
+            <div className="border-t pt-4 space-y-2">
+              <div className="flex justify-between">
+                <span>Subtotal</span>
+                <span>₦{total.toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Shipping</span>
+                <span>Free</span>
+              </div>
+              <div className="border-t pt-2 mt-2 font-bold flex justify-between">
+                <span>Total</span>
+                <span>₦{total.toLocaleString()}</span>
+              </div>
+            </div>
+          </Card>
+        </div>
+      </div>
+    </div>
+  )
+}
