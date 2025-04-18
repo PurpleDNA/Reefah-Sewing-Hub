@@ -50,7 +50,7 @@ export default function CartPage() {
               </div>
               <div className="border-t pt-2 mt-2 font-bold flex justify-between">
                 <span>Total</span>
-                <span>${total.toFixed(2)}</span>
+                <span>₦{total.toFixed(2)}</span>
               </div>
             </div>
             <Button className="w-full" size="lg" onClick={() => router.push("/checkout")}>
