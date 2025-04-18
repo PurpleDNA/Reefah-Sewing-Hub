@@ -7,7 +7,7 @@ import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { ShoppingCart, Menu, User, Search, X } from "lucide-react"
+import { ShoppingCart, Menu, User, Search, X, ShieldCheck } from "lucide-react"
 import { useCart } from "@/hooks/use-cart"
 import { useAuth } from "@/hooks/use-auth"
 import { ThemeToggle } from "@/components/theme-toggle"
@@ -104,6 +104,22 @@ export default function Header() {
                 {item.name}
               </Link>
             ))}
+
+            {/* Admin Button - Only visible for admin users */}
+            {isAdmin && (
+              <Link
+                href="/admin"
+                className={cn(
+                  "flex items-center gap-1.5 text-sm font-medium transition-colors",
+                  pathname.startsWith("/admin")
+                    ? "text-green-600 dark:text-green-400"
+                    : "text-foreground hover:text-green-600 dark:hover:text-green-400",
+                )}
+              >
+                <ShieldCheck className="h-4 w-4" />
+                Admin
+              </Link>
+            )}
           </nav>
 
           {/* Desktop Actions */}
@@ -113,6 +129,24 @@ export default function Header() {
             </Button>
 
             <ThemeToggle />
+
+            {/* Admin Button (Alternative position) - Only visible for admin users */}
+            {isAdmin && (
+              <Button
+                variant="outline"
+                size="sm"
+                asChild
+                className={cn(
+                  "gap-1.5 border-green-600 text-green-600 hover:bg-green-50 hover:text-green-700",
+                  "dark:border-green-400 dark:text-green-400 dark:hover:bg-green-950 dark:hover:text-green-300",
+                )}
+              >
+                <Link href="/admin">
+                  <ShieldCheck className="h-4 w-4" />
+                  Admin
+                </Link>
+              </Button>
+            )}
 
             {user ? (
               <DropdownMenu>
@@ -162,6 +196,23 @@ export default function Header() {
 
           {/* Mobile Menu Button */}
           <div className="flex md:hidden items-center space-x-4">
+            {/* Mobile Admin Button - Only visible for admin users */}
+            {isAdmin && (
+              <Button
+                variant="outline"
+                size="sm"
+                asChild
+                className={cn(
+                  "gap-1.5 border-green-600 text-green-600 hover:bg-green-50 hover:text-green-700",
+                  "dark:border-green-400 dark:text-green-400 dark:hover:bg-green-950 dark:hover:text-green-300",
+                )}
+              >
+                <Link href="/admin">
+                  <ShieldCheck className="h-4 w-4" />
+                </Link>
+              </Button>
+            )}
+
             <Button variant="ghost" size="icon" onClick={() => setIsSearchOpen(!isSearchOpen)} aria-label="Search">
               <Search className="h-5 w-5" />
             </Button>
@@ -233,6 +284,22 @@ export default function Header() {
                   {item.name}
                 </Link>
               ))}
+
+              {/* Admin Link in Mobile Menu - Only visible for admin users */}
+              {isAdmin && (
+                <Link
+                  href="/admin"
+                  className={cn(
+                    "px-4 py-2 text-sm font-medium transition-colors hover:bg-muted flex items-center gap-2",
+                    pathname.startsWith("/admin") ? "text-green-600 dark:text-green-400" : "text-foreground",
+                  )}
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  <ShieldCheck className="h-4 w-4" />
+                  Admin Dashboard
+                </Link>
+              )}
+
               {user ? (
                 <>
                   <Link
@@ -249,15 +316,6 @@ export default function Header() {
                   >
                     My Orders
                   </Link>
-                  {isAdmin && (
-                    <Link
-                      href="/admin"
-                      className="px-4 py-2 text-sm font-medium transition-colors hover:bg-muted"
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      Admin Dashboard
-                    </Link>
-                  )}
                   <button
                     className="px-4 py-2 text-sm font-medium text-left text-red-600 transition-colors hover:bg-muted w-full"
                     onClick={() => {
