@@ -132,7 +132,7 @@ export function Hero() {
                 />
               </svg>
             </div>
-            <h3 className="font-medium">Easy Returns</h3>
+            <h3 className="text-sm text-gray-500">Easy Returns</h3>
           </div>
         </div>
       </div>
