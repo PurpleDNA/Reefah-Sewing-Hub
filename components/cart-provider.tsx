@@ -47,10 +47,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
               supabaseRef.current = createClient()
             }
 
-            // Use direct query to avoid RLS issues
+            // Fix: Use maybeSingle() instead of single() to handle case where cart doesn't exist
             const { data, error } = await supabaseRef.current
               .from("carts")
-              .select("items")
+              .select("*") // Fix: Select all columns first
               .eq("user_id", user.id)
               .maybeSingle()
 
@@ -194,7 +194,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         // Get current cart
         const { data: existingCart } = await supabaseRef.current
           .from("carts")
-          .select("items")
+          .select("*") // Fix: Select all columns first
           .eq("user_id", user.id)
           .maybeSingle()
 
@@ -257,7 +257,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         // Get current cart
         const { data: existingCart } = await supabaseRef.current
           .from("carts")
-          .select("items")
+          .select("*") // Fix: Select all columns first
           .eq("user_id", user.id)
           .maybeSingle()
 
@@ -295,7 +295,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         // Get current cart
         const { data: existingCart } = await supabaseRef.current
           .from("carts")
-          .select("items")
+          .select("*") // Fix: Select all columns first
           .eq("user_id", user.id)
           .maybeSingle()
 

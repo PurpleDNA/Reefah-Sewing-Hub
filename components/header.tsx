@@ -7,7 +7,7 @@ import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { ShoppingCart, Menu, User, Search, X, ShieldCheck, LogOut } from "lucide-react"
+import { ShoppingCart, Menu, User, Search, X, ShieldCheck, LogOut, Package } from "lucide-react"
 import { useCart } from "@/hooks/use-cart"
 import { useAuth } from "@/hooks/use-auth"
 import { ThemeToggle } from "@/components/theme-toggle"
@@ -43,16 +43,30 @@ export default function Header() {
       try {
         const supabase = createClient()
 
-        // Direct query to profiles table
-        const { data, error } = await supabase.from("profiles").select("is_admin").eq("id", user.id).single()
+        // Use the RPC function to check admin status
+        const { data, error } = await supabase.rpc("check_if_admin", { user_id: user.id })
 
         if (error) {
           console.error("Error checking admin status:", error)
-          setIsAdmin(false)
+
+          // Fallback to direct query if RPC fails
+          const { data: profileData, error: profileError } = await supabase
+            .from("profiles")
+            .select("is_admin")
+            .eq("id", user.id)
+            .single()
+
+          if (profileError) {
+            console.error("Error with fallback admin check:", profileError)
+            setIsAdmin(false)
+            return
+          }
+
+          setIsAdmin(!!profileData?.is_admin)
           return
         }
 
-        setIsAdmin(!!data?.is_admin)
+        setIsAdmin(!!data)
       } catch (error) {
         console.error("Failed to check admin status:", error)
         setIsAdmin(false)
@@ -169,7 +183,10 @@ export default function Header() {
                     <Link href="/profile">My Profile</Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
-                    <Link href="/profile/orders">My Orders</Link>
+                    <Link href="/orders">
+                      <Package className="h-4 w-4 mr-2" />
+                      My Orders
+                    </Link>
                   </DropdownMenuItem>
                   {isAdmin && (
                     <>
@@ -317,10 +334,11 @@ export default function Header() {
                     My Profile
                   </Link>
                   <Link
-                    href="/profile/orders"
-                    className="px-4 py-2 text-sm font-medium transition-colors hover:bg-muted"
+                    href="/orders"
+                    className="px-4 py-2 text-sm font-medium transition-colors hover:bg-muted flex items-center"
                     onClick={() => setIsMenuOpen(false)}
                   >
+                    <Package className="h-4 w-4 mr-2" />
                     My Orders
                   </Link>
                   <button
