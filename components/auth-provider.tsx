@@ -81,8 +81,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               if (!data || error) {
                 console.log("Creating profile for user:", currentUser.id)
 
-                // Get user metadata
-                const fullName = currentUser.user_metadata.full_name || currentUser.user_metadata.name || ""
+                // Get user metadata - handle both email/password and OAuth providers
+                const fullName =
+                  currentUser.user_metadata.full_name ||
+                  currentUser.user_metadata.name ||
+                  currentUser.user_metadata.preferred_username ||
+                  ""
 
                 await supabaseRef.current.from("profiles").insert({
                   id: currentUser.id,
@@ -138,7 +142,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.removeItem("cart")
 
       // Sign out from Supabase
-      await supabaseRef.current.auth.signOut()
+      const { error } = await supabaseRef.current.auth.signOut()
+
+      if (error) {
+        console.error("Error signing out:", error)
+        throw error
+      }
 
       // Clear user state
       setUser(null)
@@ -148,6 +157,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       router.refresh()
     } catch (error) {
       console.error("Error signing out:", error)
+      throw error
     }
   }
 

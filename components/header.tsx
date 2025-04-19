@@ -89,6 +89,16 @@ export default function Header() {
     }
   }
 
+  const handleSignOut = async () => {
+    try {
+      await signOut()
+      router.push("/")
+      router.refresh()
+    } catch (error) {
+      console.error("Error signing out:", error)
+    }
+  }
+
   return (
     <header
       className={cn(
@@ -169,7 +179,7 @@ export default function Header() {
                     </>
                   )}
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => signOut()}>Logout</DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleSignOut}>Logout</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
@@ -285,7 +295,7 @@ export default function Header() {
                   className="px-4 py-2 text-sm font-medium bg-green-600 text-white rounded-md flex items-center gap-2"
                   onClick={() => setIsMenuOpen(false)}
                 >
-                  <ShieldCheck className="h-4 w-4" />
+                  <ShieldCheck className="h-4 w-4 mr-2" />
                   Admin Dashboard
                 </Link>
               )}
@@ -309,7 +319,7 @@ export default function Header() {
                   <button
                     className="px-4 py-2 text-sm font-medium text-left text-red-600 transition-colors hover:bg-muted w-full"
                     onClick={() => {
-                      signOut()
+                      handleSignOut()
                       setIsMenuOpen(false)
                     }}
                   >

@@ -23,6 +23,18 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth()
   const isMountedRef = useRef(true)
   const [isInitialized, setIsInitialized] = useState(false)
+  const supabaseRef = useRef<any>(null)
+
+  // Initialize Supabase client
+  useEffect(() => {
+    try {
+      if (!supabaseRef.current) {
+        supabaseRef.current = createClient()
+      }
+    } catch (error) {
+      console.error("Failed to initialize Supabase client:", error)
+    }
+  }, [])
 
   // Load cart from localStorage or Supabase on mount
   useEffect(() => {
@@ -31,8 +43,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
         if (user) {
           // If user is logged in, try to load cart from Supabase
           try {
-            const supabase = createClient()
-            const { data, error } = await supabase.from("carts").select("items").eq("user_id", user.id).single()
+            if (!supabaseRef.current) {
+              supabaseRef.current = createClient()
+            }
+
+            const { data, error } = await supabaseRef.current
+              .from("carts")
+              .select("items")
+              .eq("user_id", user.id)
+              .single()
 
             console.log("Loading cart from Supabase:", { data, error, userId: user.id })
 
@@ -89,18 +108,23 @@ export function CartProvider({ children }: { children: ReactNode }) {
     if (user) {
       const saveToSupabase = async () => {
         try {
-          const supabase = createClient()
+          if (!supabaseRef.current) {
+            supabaseRef.current = createClient()
+          }
 
-          // Check if cart exists
-          const { data, error } = await supabase.from("carts").select("id").eq("user_id", user.id).single()
+          // First check if cart exists
+          const { data, error } = await supabaseRef.current.from("carts").select("id").eq("user_id", user.id).single()
 
           console.log("Checking if cart exists:", { data, error, userId: user.id })
 
           if (data) {
             // Update existing cart
-            const { error: updateError } = await supabase
+            const { error: updateError } = await supabaseRef.current
               .from("carts")
-              .update({ items, updated_at: new Date().toISOString() })
+              .update({
+                items,
+                updated_at: new Date().toISOString(),
+              })
               .eq("user_id", user.id)
 
             console.log("Updated cart in Supabase:", { updateError, items })
@@ -110,7 +134,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
             }
           } else {
             // Create new cart
-            const { error: insertError } = await supabase.from("carts").insert({ user_id: user.id, items })
+            const { error: insertError } = await supabaseRef.current.from("carts").insert({
+              user_id: user.id,
+              items,
+            })
 
             console.log("Created new cart in Supabase:", { insertError, items })
 
@@ -179,8 +206,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
     if (user) {
       try {
-        const supabase = createClient()
-        supabase.from("carts").update({ items: [] }).eq("user_id", user.id)
+        if (!supabaseRef.current) {
+          supabaseRef.current = createClient()
+        }
+
+        supabaseRef.current.from("carts").update({ items: [] }).eq("user_id", user.id)
       } catch (error) {
         console.error("Failed to clear cart in Supabase:", error)
       }

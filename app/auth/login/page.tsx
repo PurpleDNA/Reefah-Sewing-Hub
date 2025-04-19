@@ -8,11 +8,12 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { createClient } from "@/lib/supabase/client"
 import { toast } from "@/components/ui/use-toast"
 import { Loader2 } from "lucide-react"
+import { FcGoogle } from "react-icons/fc"
 
 export default function AuthPage() {
   const router = useRouter()
@@ -20,6 +21,7 @@ export default function AuthPage() {
   const redirectUrl = searchParams.get("redirect") || "/"
 
   const [isLoading, setIsLoading] = useState(false)
+  const [googleLoading, setGoogleLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const [loginData, setLoginData] = useState({
@@ -149,6 +151,32 @@ export default function AuthPage() {
     }
   }
 
+  const handleGoogleSignIn = async () => {
+    setGoogleLoading(true)
+    try {
+      const supabase = createClient()
+
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
+      })
+
+      if (error) {
+        throw error
+      }
+    } catch (error: any) {
+      console.error("Google login error:", error)
+      toast({
+        title: "Login failed",
+        description: error.message || "Failed to sign in with Google.",
+        variant: "destructive",
+      })
+      setGoogleLoading(false)
+    }
+  }
+
   return (
     <div className="container mx-auto flex items-center justify-center min-h-[80vh] px-4 py-8">
       <Card className="w-full max-w-md">
@@ -159,16 +187,45 @@ export default function AuthPage() {
           </TabsList>
 
           <TabsContent value="login">
-            <form onSubmit={handleLogin}>
-              <CardHeader>
-                <CardTitle>Login</CardTitle>
-                <CardDescription>Enter your credentials to access your account</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {error && (
-                  <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">{error}</div>
-                )}
+            <CardHeader>
+              <CardTitle>Login</CardTitle>
+              <CardDescription>Enter your credentials to access your account</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {error && (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">{error}</div>
+              )}
 
+              <Button
+                variant="outline"
+                type="button"
+                onClick={handleGoogleSignIn}
+                disabled={googleLoading}
+                className="w-full"
+              >
+                {googleLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Connecting to Google...
+                  </>
+                ) : (
+                  <>
+                    <FcGoogle className="mr-2 h-5 w-5" />
+                    Sign in with Google
+                  </>
+                )}
+              </Button>
+
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
+                </div>
+              </div>
+
+              <form onSubmit={handleLogin} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="login-email">Email</Label>
                   <Input
@@ -197,8 +254,6 @@ export default function AuthPage() {
                     required
                   />
                 </div>
-              </CardContent>
-              <CardFooter className="flex flex-col space-y-4">
                 <Button type="submit" className="w-full" disabled={isLoading}>
                   {isLoading ? (
                     <>
@@ -209,21 +264,50 @@ export default function AuthPage() {
                     "Login"
                   )}
                 </Button>
-              </CardFooter>
-            </form>
+              </form>
+            </CardContent>
           </TabsContent>
 
           <TabsContent value="register">
-            <form onSubmit={handleRegister}>
-              <CardHeader>
-                <CardTitle>Create an account</CardTitle>
-                <CardDescription>Enter your details to create a new account</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {error && (
-                  <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">{error}</div>
-                )}
+            <CardHeader>
+              <CardTitle>Create an account</CardTitle>
+              <CardDescription>Enter your details to create a new account</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {error && (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">{error}</div>
+              )}
 
+              <Button
+                variant="outline"
+                type="button"
+                onClick={handleGoogleSignIn}
+                disabled={googleLoading}
+                className="w-full"
+              >
+                {googleLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Connecting to Google...
+                  </>
+                ) : (
+                  <>
+                    <FcGoogle className="mr-2 h-5 w-5" />
+                    Sign up with Google
+                  </>
+                )}
+              </Button>
+
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
+                </div>
+              </div>
+
+              <form onSubmit={handleRegister} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="register-name">Full Name</Label>
                   <Input
@@ -269,8 +353,6 @@ export default function AuthPage() {
                     required
                   />
                 </div>
-              </CardContent>
-              <CardFooter className="flex flex-col space-y-4">
                 <Button type="submit" className="w-full" disabled={isLoading}>
                   {isLoading ? (
                     <>
@@ -281,8 +363,8 @@ export default function AuthPage() {
                     "Create account"
                   )}
                 </Button>
-              </CardFooter>
-            </form>
+              </form>
+            </CardContent>
           </TabsContent>
         </Tabs>
       </Card>
