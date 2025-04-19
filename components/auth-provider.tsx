@@ -134,12 +134,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     try {
-      if (!supabaseRef.current) {
-        supabaseRef.current = createClient()
-      }
-
       // Clear local storage cart
       localStorage.removeItem("cart")
+      localStorage.removeItem("supabase.auth.token")
 
       // Sign out from Supabase
       const { error } = await supabaseRef.current.auth.signOut()
@@ -151,9 +148,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       // Clear user state
       setUser(null)
+
+      // Force a hard refresh to clear any cached state
+      window.location.href = "/"
     } catch (error) {
       console.error("Error signing out:", error)
-      throw error
+      // Even if there's an error, try to force logout
+      setUser(null)
+      window.location.href = "/"
     }
   }
 

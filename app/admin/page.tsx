@@ -1,176 +1,165 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { createClient } from "@/lib/supabase/server"
-import { ShoppingBag, Users, Package, CreditCard } from "lucide-react"
-import Link from "next/link"
+"use client"
 
-export default async function AdminDashboard() {
-  const supabase = createClient()
+import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
+import { useAuth } from "@/hooks/use-auth"
+import { createClient } from "@/lib/supabase/client"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Loader2, Package, ShoppingBag, Users, AlertTriangle } from "lucide-react"
+import ProductsTab from "@/components/admin/products-tab"
+import OrdersTab from "@/components/admin/orders-tab"
+import UsersTab from "@/components/admin/users-tab"
 
-  // Fetch dashboard stats
-  const [{ count: productCount }, { count: orderCount }, { count: userCount }, { data: recentOrders }] =
-    await Promise.all([
-      supabase.from("products").select("*", { count: "exact", head: true }),
-      supabase.from("orders").select("*", { count: "exact", head: true }),
-      supabase.from("profiles").select("*", { count: "exact", head: true }),
-      supabase
-        .from("orders")
-        .select("*, profiles:user_id(full_name)")
-        .order("created_at", { ascending: false })
-        .limit(5),
-    ])
+export default function AdminPage() {
+  const { user } = useAuth()
+  const router = useRouter()
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [activeTab, setActiveTab] = useState("products")
+
+  useEffect(() => {
+    const checkAdminStatus = async () => {
+      if (!user) {
+        router.push("/auth/login?redirect=/admin")
+        return
+      }
+
+      try {
+        const supabase = createClient()
+
+        // Try to use the RPC function first
+        try {
+          const { data, error } = await supabase.rpc("check_if_admin", { user_id: user.id })
+
+          if (error) {
+            console.error("Error checking admin status via RPC:", error)
+            throw error
+          }
+
+          if (data === true) {
+            setIsAdmin(true)
+            setLoading(false)
+            return
+          }
+        } catch (rpcError) {
+          console.error("RPC method failed, falling back to direct query:", rpcError)
+        }
+
+        // Fallback to direct query
+        const { data: profileData, error: profileError } = await supabase
+          .from("profiles")
+          .select("is_admin")
+          .eq("id", user.id)
+          .single()
+
+        if (profileError) {
+          console.error("Error with fallback admin check:", profileError)
+          setError("Failed to verify admin status. Please try again later.")
+          setIsAdmin(false)
+        } else {
+          setIsAdmin(!!profileData?.is_admin)
+        }
+      } catch (error) {
+        console.error("Failed to check admin status:", error)
+        setError("An unexpected error occurred. Please try again later.")
+        setIsAdmin(false)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    checkAdminStatus()
+  }, [user, router])
+
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-16 text-center">
+        <Loader2 className="mx-auto h-16 w-16 text-muted-foreground mb-4 animate-spin" />
+        <h2 className="text-2xl font-bold mb-2">Verifying admin access...</h2>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto px-4 py-16 text-center">
+        <AlertTriangle className="mx-auto h-16 w-16 text-amber-500 mb-4" />
+        <h2 className="text-2xl font-bold mb-2">Error</h2>
+        <p className="text-muted-foreground mb-8">{error}</p>
+        <Button onClick={() => window.location.reload()}>Try Again</Button>
+      </div>
+    )
+  }
+
+  if (!isAdmin) {
+    return (
+      <div className="container mx-auto px-4 py-16 text-center">
+        <AlertTriangle className="mx-auto h-16 w-16 text-amber-500 mb-4" />
+        <h2 className="text-2xl font-bold mb-2">Access Denied</h2>
+        <p className="text-muted-foreground mb-8">You do not have permission to access the admin dashboard.</p>
+        <Button asChild>
+          <a href="/">Return to Home</a>
+        </Button>
+      </div>
+    )
+  }
 
   return (
-    <div>
+    <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-8">Admin Dashboard</h1>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
         <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center">
-              <div className="bg-green-100 p-2 rounded-full">
-                <ShoppingBag className="h-6 w-6 text-green-700" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-muted-foreground">Total Products</p>
-                <h3 className="text-2xl font-bold">{productCount || 0}</h3>
-              </div>
-            </div>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Products</CardTitle>
+            <Package className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">120</div>
+            <p className="text-xs text-muted-foreground">+10 from last month</p>
           </CardContent>
         </Card>
-
         <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center">
-              <div className="bg-blue-100 p-2 rounded-full">
-                <Package className="h-6 w-6 text-blue-700" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-muted-foreground">Total Orders</p>
-                <h3 className="text-2xl font-bold">{orderCount || 0}</h3>
-              </div>
-            </div>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Orders</CardTitle>
+            <ShoppingBag className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">45</div>
+            <p className="text-xs text-muted-foreground">+5 from last week</p>
           </CardContent>
         </Card>
-
         <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center">
-              <div className="bg-purple-100 p-2 rounded-full">
-                <Users className="h-6 w-6 text-purple-700" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-muted-foreground">Total Users</p>
-                <h3 className="text-2xl font-bold">{userCount || 0}</h3>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center">
-              <div className="bg-amber-100 p-2 rounded-full">
-                <CreditCard className="h-6 w-6 text-amber-700" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-muted-foreground">Revenue</p>
-                <h3 className="text-2xl font-bold">₦0.00</h3>
-              </div>
-            </div>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Users</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">32</div>
+            <p className="text-xs text-muted-foreground">+3 new users this week</p>
           </CardContent>
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <Card>
-          <CardHeader>
-            <CardTitle>Recent Orders</CardTitle>
-            <CardDescription>Latest 5 orders placed on your store</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {recentOrders && recentOrders.length > 0 ? (
-              <div className="space-y-4">
-                {recentOrders.map((order) => (
-                  <div key={order.id} className="flex justify-between items-center border-b pb-2">
-                    <div>
-                      <p className="font-medium">{order.profiles?.full_name || "Anonymous"}</p>
-                      <p className="text-sm text-muted-foreground">{new Date(order.created_at).toLocaleDateString()}</p>
-                    </div>
-                    <div>
-                      <p className="font-medium">₦{order.total.toLocaleString()}</p>
-                      <p
-                        className={`text-xs ${
-                          order.status === "delivered"
-                            ? "text-green-600"
-                            : order.status === "cancelled"
-                              ? "text-red-600"
-                              : "text-amber-600"
-                        } uppercase`}
-                      >
-                        {order.status}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-muted-foreground">No orders yet</p>
-            )}
-
-            <div className="mt-4">
-              <Link href="/admin/orders" className="text-sm text-green-600 hover:underline">
-                View all orders →
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Quick Actions</CardTitle>
-            <CardDescription>Common tasks for store management</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Link href="/admin/products/new">
-                <Card className="hover:bg-muted/50 transition-colors cursor-pointer h-full">
-                  <CardContent className="pt-6">
-                    <h3 className="font-medium">Add New Product</h3>
-                    <p className="text-sm text-muted-foreground">Create a new product listing</p>
-                  </CardContent>
-                </Card>
-              </Link>
-
-              <Link href="/admin/products">
-                <Card className="hover:bg-muted/50 transition-colors cursor-pointer h-full">
-                  <CardContent className="pt-6">
-                    <h3 className="font-medium">Manage Products</h3>
-                    <p className="text-sm text-muted-foreground">Update inventory and details</p>
-                  </CardContent>
-                </Card>
-              </Link>
-
-              <Link href="/admin/orders">
-                <Card className="hover:bg-muted/50 transition-colors cursor-pointer h-full">
-                  <CardContent className="pt-6">
-                    <h3 className="font-medium">Process Orders</h3>
-                    <p className="text-sm text-muted-foreground">Update order status</p>
-                  </CardContent>
-                </Card>
-              </Link>
-
-              <Link href="/admin/categories">
-                <Card className="hover:bg-muted/50 transition-colors cursor-pointer h-full">
-                  <CardContent className="pt-6">
-                    <h3 className="font-medium">Manage Categories</h3>
-                    <p className="text-sm text-muted-foreground">Add or edit product categories</p>
-                  </CardContent>
-                </Card>
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="mb-8">
+          <TabsTrigger value="products">Products</TabsTrigger>
+          <TabsTrigger value="orders">Orders</TabsTrigger>
+          <TabsTrigger value="users">Users</TabsTrigger>
+        </TabsList>
+        <TabsContent value="products">
+          <ProductsTab />
+        </TabsContent>
+        <TabsContent value="orders">
+          <OrdersTab />
+        </TabsContent>
+        <TabsContent value="users">
+          <UsersTab />
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }
