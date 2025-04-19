@@ -47,11 +47,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
               supabaseRef.current = createClient()
             }
 
+            // Use direct query to avoid RLS issues
             const { data, error } = await supabaseRef.current
               .from("carts")
               .select("items")
               .eq("user_id", user.id)
-              .single()
+              .maybeSingle()
 
             console.log("Loading cart from Supabase:", { data, error, userId: user.id })
 
@@ -113,7 +114,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
           }
 
           // First check if cart exists
-          const { data, error } = await supabaseRef.current.from("carts").select("id").eq("user_id", user.id).single()
+          const { data, error } = await supabaseRef.current
+            .from("carts")
+            .select("id")
+            .eq("user_id", user.id)
+            .maybeSingle()
 
           console.log("Checking if cart exists:", { data, error, userId: user.id })
 
@@ -164,7 +169,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  const addItem = (newItem: CartItem) => {
+  const addItem = async (newItem: CartItem) => {
     setItems((prevItems) => {
       const existingItemIndex = prevItems.findIndex((item) => item.id === newItem.id)
 
@@ -179,28 +184,145 @@ export function CartProvider({ children }: { children: ReactNode }) {
       }
     })
 
+    // If user is logged in, update cart in backend directly
+    if (user) {
+      try {
+        if (!supabaseRef.current) {
+          supabaseRef.current = createClient()
+        }
+
+        // Get current cart
+        const { data: existingCart } = await supabaseRef.current
+          .from("carts")
+          .select("items")
+          .eq("user_id", user.id)
+          .maybeSingle()
+
+        let updatedItems: CartItem[] = []
+
+        if (existingCart?.items) {
+          // Cart exists, update items
+          const existingItems = existingCart.items
+          const existingItemIndex = existingItems.findIndex((item: CartItem) => item.id === newItem.id)
+
+          if (existingItemIndex > -1) {
+            // Item exists, update quantity
+            updatedItems = [...existingItems]
+            updatedItems[existingItemIndex].quantity += newItem.quantity
+          } else {
+            // Item doesn't exist, add it
+            updatedItems = [...existingItems, newItem]
+          }
+
+          // Update cart in database
+          await supabaseRef.current
+            .from("carts")
+            .update({
+              items: updatedItems,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("user_id", user.id)
+        } else {
+          // Cart doesn't exist, create it
+          await supabaseRef.current.from("carts").insert({
+            user_id: user.id,
+            items: [newItem],
+          })
+        }
+      } catch (error) {
+        console.error("Error updating cart in backend:", error)
+      }
+    }
+
     toast({
       description: `${newItem.name} added to cart`,
     })
   }
 
-  const updateItemQuantity = (id: string, quantity: number) => {
+  const updateItemQuantity = async (id: string, quantity: number) => {
     if (quantity < 1) {
       removeItem(id)
       return
     }
 
     setItems((prevItems) => prevItems.map((item) => (item.id === id ? { ...item, quantity } : item)))
+
+    // If user is logged in, update cart in backend
+    if (user) {
+      try {
+        if (!supabaseRef.current) {
+          supabaseRef.current = createClient()
+        }
+
+        // Get current cart
+        const { data: existingCart } = await supabaseRef.current
+          .from("carts")
+          .select("items")
+          .eq("user_id", user.id)
+          .maybeSingle()
+
+        if (existingCart?.items) {
+          // Update the item quantity
+          const updatedItems = existingCart.items.map((item: CartItem) =>
+            item.id === id ? { ...item, quantity } : item,
+          )
+
+          // Update cart in database
+          await supabaseRef.current
+            .from("carts")
+            .update({
+              items: updatedItems,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("user_id", user.id)
+        }
+      } catch (error) {
+        console.error("Error updating item quantity in backend:", error)
+      }
+    }
   }
 
-  const removeItem = (id: string) => {
+  const removeItem = async (id: string) => {
     setItems((prevItems) => prevItems.filter((item) => item.id !== id))
+
+    // If user is logged in, update cart in backend
+    if (user) {
+      try {
+        if (!supabaseRef.current) {
+          supabaseRef.current = createClient()
+        }
+
+        // Get current cart
+        const { data: existingCart } = await supabaseRef.current
+          .from("carts")
+          .select("items")
+          .eq("user_id", user.id)
+          .maybeSingle()
+
+        if (existingCart?.items) {
+          // Remove the item
+          const updatedItems = existingCart.items.filter((item: CartItem) => item.id !== id)
+
+          // Update cart in database
+          await supabaseRef.current
+            .from("carts")
+            .update({
+              items: updatedItems,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("user_id", user.id)
+        }
+      } catch (error) {
+        console.error("Error removing item from backend cart:", error)
+      }
+    }
+
     toast({
       description: "Item removed from cart",
     })
   }
 
-  const clearCart = () => {
+  const clearCart = async () => {
     setItems([])
     localStorage.removeItem("cart")
 
@@ -210,7 +332,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
           supabaseRef.current = createClient()
         }
 
-        supabaseRef.current.from("carts").update({ items: [] }).eq("user_id", user.id)
+        await supabaseRef.current.from("carts").update({ items: [] }).eq("user_id", user.id)
       } catch (error) {
         console.error("Failed to clear cart in Supabase:", error)
       }

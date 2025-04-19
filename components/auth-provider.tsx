@@ -151,10 +151,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       // Clear user state
       setUser(null)
-
-      // Redirect to home page
-      router.push("/")
-      router.refresh()
     } catch (error) {
       console.error("Error signing out:", error)
       throw error

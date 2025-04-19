@@ -5,9 +5,11 @@ import Image from "next/image"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { useCart } from "@/hooks/use-cart"
+import { useAuth } from "@/hooks/use-auth"
 import type { Product } from "@/types"
 import { toast } from "@/components/ui/use-toast"
 import { ChevronRight, Minus, Plus, ShoppingCart, Star } from "lucide-react"
+import { createClient } from "@/lib/supabase/client"
 
 interface ProductDetailProps {
   product: Product
@@ -15,6 +17,7 @@ interface ProductDetailProps {
 
 export function ProductDetail({ product }: ProductDetailProps) {
   const { addItem } = useCart()
+  const { user } = useAuth()
   const [quantity, setQuantity] = useState(1)
   const [isAdding, setIsAdding] = useState(false)
 
@@ -26,25 +29,75 @@ export function ProductDetail({ product }: ProductDetailProps) {
     setQuantity((prev) => Math.max(prev - 1, 1))
   }
 
-  const handleAddToCart = () => {
+  const handleAddToCart = async () => {
     setIsAdding(true)
 
-    setTimeout(() => {
-      addItem({
+    try {
+      // Create cart item
+      const cartItem = {
         id: product.id,
         name: product.name,
         price: product.price,
         image: product.image_url,
         quantity,
-      })
+      }
+
+      // If user is logged in, update cart in backend first
+      if (user) {
+        const supabase = createClient()
+
+        // Check if cart exists
+        const { data: existingCart } = await supabase.from("carts").select("items").eq("user_id", user.id).maybeSingle()
+
+        if (existingCart) {
+          // Cart exists, update items
+          const existingItems = existingCart.items || []
+          const existingItemIndex = existingItems.findIndex((item: any) => item.id === product.id)
+
+          let updatedItems
+          if (existingItemIndex > -1) {
+            // Item exists, update quantity
+            updatedItems = [...existingItems]
+            updatedItems[existingItemIndex].quantity += quantity
+          } else {
+            // Item doesn't exist, add it
+            updatedItems = [...existingItems, cartItem]
+          }
+
+          // Update cart in database
+          await supabase
+            .from("carts")
+            .update({
+              items: updatedItems,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("user_id", user.id)
+        } else {
+          // Cart doesn't exist, create it
+          await supabase.from("carts").insert({
+            user_id: user.id,
+            items: [cartItem],
+          })
+        }
+      }
+
+      // Update local cart state
+      addItem(cartItem)
 
       toast({
         title: "Added to cart",
         description: `${quantity} x ${product.name} has been added to your cart.`,
       })
-
+    } catch (error) {
+      console.error("Error adding to cart:", error)
+      toast({
+        title: "Error",
+        description: "Failed to add item to cart. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
       setIsAdding(false)
-    }, 500)
+    }
   }
 
   return (
@@ -84,7 +137,7 @@ export function ProductDetail({ product }: ProductDetailProps) {
         </div>
 
         <div className="mb-6">
-          <p className="text-2xl font-bold text-green-600">${product.price.toFixed(2)}</p>
+          <p className="text-2xl font-bold text-green-600">₦{product.price.toFixed(2)}</p>
           {product.sale_price && (
             <p className="text-sm text-muted-foreground line-through">₦{product.sale_price.toFixed(2)}</p>
           )}

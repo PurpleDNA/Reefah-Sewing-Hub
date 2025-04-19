@@ -82,7 +82,8 @@ export default function AuthPage() {
         description: "Welcome back!",
       })
 
-      router.push(redirectUrl)
+      // Redirect to home page
+      router.push("/")
       router.refresh()
     } catch (error: any) {
       console.error("Login error:", error)

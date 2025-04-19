@@ -113,30 +113,27 @@ export default function CheckoutPage() {
         }
       }
 
-      // Create order
+      // Create order directly with RPC to avoid RLS issues
       console.log("Creating order with data:", {
         user_id: user?.id,
         total,
         ...formData,
       })
 
-      const { data: order, error: orderError } = await supabase
-        .from("orders")
-        .insert({
-          user_id: user?.id,
-          total: total,
-          first_name: formData.firstName,
-          last_name: formData.lastName,
-          email: formData.email,
-          phone: formData.phone,
-          address: formData.address,
-          city: formData.city,
-          state: formData.state,
-          postal_code: formData.postalCode,
-          status: "pending",
-        })
-        .select()
-        .single()
+      // Create order with direct insert
+      const { data: order, error: orderError } = await supabase.rpc("create_order", {
+        p_user_id: user?.id || null,
+        p_total: total,
+        p_first_name: formData.firstName,
+        p_last_name: formData.lastName,
+        p_email: formData.email,
+        p_phone: formData.phone,
+        p_address: formData.address,
+        p_city: formData.city,
+        p_state: formData.state,
+        p_postal_code: formData.postalCode,
+        p_status: "pending",
+      })
 
       if (orderError) {
         console.error("Order creation error:", orderError)
@@ -147,7 +144,7 @@ export default function CheckoutPage() {
 
       // Create order items
       const orderItems = items.map((item) => ({
-        order_id: order.id,
+        order_id: order,
         product_id: item.id,
         quantity: item.quantity,
         price: item.price,

@@ -42,8 +42,9 @@ export default function Header() {
 
       try {
         const supabase = createClient()
-        // Direct query to avoid policy recursion
-        const { data, error } = await supabase.rpc("is_user_admin", { user_id: user.id })
+
+        // Direct query to profiles table
+        const { data, error } = await supabase.from("profiles").select("is_admin").eq("id", user.id).single()
 
         if (error) {
           console.error("Error checking admin status:", error)
@@ -51,7 +52,7 @@ export default function Header() {
           return
         }
 
-        setIsAdmin(!!data)
+        setIsAdmin(!!data?.is_admin)
       } catch (error) {
         console.error("Failed to check admin status:", error)
         setIsAdmin(false)
@@ -90,17 +91,7 @@ export default function Header() {
 
   const handleSignOut = async () => {
     try {
-      const supabase = createClient()
-
-      // Clear local storage cart
-      localStorage.removeItem("cart")
-
-      // Sign out from Supabase
-      await supabase.auth.signOut()
-
-      // Redirect to home page
-      router.push("/")
-      router.refresh()
+      await signOut()
 
       // Force page reload to ensure all state is cleared
       window.location.href = "/"
@@ -190,10 +181,8 @@ export default function Header() {
                   )}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
-                    onSelect={(e) => {
-                      e.preventDefault()
-                      handleSignOut()
-                    }}
+                    onClick={handleSignOut}
+                    className="flex items-center text-red-600 focus:text-red-600"
                   >
                     <LogOut className="h-4 w-4 mr-2" />
                     Logout
