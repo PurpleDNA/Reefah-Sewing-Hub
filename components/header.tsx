@@ -7,7 +7,7 @@ import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { ShoppingCart, Menu, User, Search, X, ShieldCheck } from "lucide-react"
+import { ShoppingCart, Menu, User, Search, X, ShieldCheck, LogOut } from "lucide-react"
 import { useCart } from "@/hooks/use-cart"
 import { useAuth } from "@/hooks/use-auth"
 import { ThemeToggle } from "@/components/theme-toggle"
@@ -42,9 +42,8 @@ export default function Header() {
 
       try {
         const supabase = createClient()
-        const { data, error } = await supabase.from("profiles").select("is_admin").eq("id", user.id).single()
-
-        console.log("Admin check result:", { data, error, userId: user.id })
+        // Direct query to avoid policy recursion
+        const { data, error } = await supabase.rpc("is_user_admin", { user_id: user.id })
 
         if (error) {
           console.error("Error checking admin status:", error)
@@ -52,7 +51,7 @@ export default function Header() {
           return
         }
 
-        setIsAdmin(!!data?.is_admin)
+        setIsAdmin(!!data)
       } catch (error) {
         console.error("Failed to check admin status:", error)
         setIsAdmin(false)
@@ -91,9 +90,20 @@ export default function Header() {
 
   const handleSignOut = async () => {
     try {
-      await signOut()
+      const supabase = createClient()
+
+      // Clear local storage cart
+      localStorage.removeItem("cart")
+
+      // Sign out from Supabase
+      await supabase.auth.signOut()
+
+      // Redirect to home page
       router.push("/")
       router.refresh()
+
+      // Force page reload to ensure all state is cleared
+      window.location.href = "/"
     } catch (error) {
       console.error("Error signing out:", error)
     }
@@ -179,7 +189,15 @@ export default function Header() {
                     </>
                   )}
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleSignOut}>Logout</DropdownMenuItem>
+                  <DropdownMenuItem
+                    onSelect={(e) => {
+                      e.preventDefault()
+                      handleSignOut()
+                    }}
+                  >
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Logout
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
@@ -317,12 +335,13 @@ export default function Header() {
                     My Orders
                   </Link>
                   <button
-                    className="px-4 py-2 text-sm font-medium text-left text-red-600 transition-colors hover:bg-muted w-full"
+                    className="px-4 py-2 text-sm font-medium text-left text-red-600 transition-colors hover:bg-muted w-full flex items-center"
                     onClick={() => {
                       handleSignOut()
                       setIsMenuOpen(false)
                     }}
                   >
+                    <LogOut className="h-4 w-4 mr-2" />
                     Logout
                   </button>
                 </>

@@ -12,17 +12,20 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { createClient } from "@/lib/supabase/client"
 import { toast } from "@/components/ui/use-toast"
-import { Loader2 } from "lucide-react"
+import { Loader2, Mail, AlertCircle } from "lucide-react"
 import { FcGoogle } from "react-icons/fc"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 export default function AuthPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const redirectUrl = searchParams.get("redirect") || "/"
+  const verifyEmail = searchParams.get("verifyEmail") === "true"
 
   const [isLoading, setIsLoading] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [showVerificationAlert, setShowVerificationAlert] = useState(verifyEmail)
 
   const [loginData, setLoginData] = useState({
     email: "",
@@ -56,7 +59,7 @@ export default function AuthPage() {
 
       console.log("Attempting login with:", loginData.email)
 
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email: loginData.email,
         password: loginData.password,
       })
@@ -64,6 +67,13 @@ export default function AuthPage() {
       if (error) {
         console.error("Login error:", error)
         throw error
+      }
+
+      // Check if email is verified
+      if (data.user && !data.user.email_confirmed_at) {
+        setShowVerificationAlert(true)
+        setIsLoading(false)
+        return
       }
 
       // Success
@@ -109,7 +119,7 @@ export default function AuthPage() {
 
       console.log("Attempting registration with:", registerData.email)
 
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email: registerData.email,
         password: registerData.password,
         options: {
@@ -124,20 +134,21 @@ export default function AuthPage() {
         throw error
       }
 
-      // Success
+      // Success - show verification alert
+      setShowVerificationAlert(true)
+
       toast({
         title: "Registration successful",
         description: "Please check your email to confirm your account.",
       })
 
-      // Automatically log in after registration
-      await supabase.auth.signInWithPassword({
-        email: registerData.email,
-        password: registerData.password,
+      // Clear form
+      setRegisterData({
+        email: "",
+        password: "",
+        confirmPassword: "",
+        fullName: "",
       })
-
-      router.push(redirectUrl)
-      router.refresh()
     } catch (error: any) {
       console.error("Registration error:", error)
       setError(error.message || "Failed to register. Please try again.")
@@ -177,9 +188,48 @@ export default function AuthPage() {
     }
   }
 
+  const resendVerificationEmail = async () => {
+    try {
+      const supabase = createClient()
+      const { error } = await supabase.auth.resend({
+        type: "signup",
+        email: loginData.email || registerData.email,
+      })
+
+      if (error) throw error
+
+      toast({
+        title: "Verification email sent",
+        description: "Please check your inbox for the verification link.",
+      })
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to send verification email.",
+        variant: "destructive",
+      })
+    }
+  }
+
   return (
     <div className="container mx-auto flex items-center justify-center min-h-[80vh] px-4 py-8">
       <Card className="w-full max-w-md">
+        {showVerificationAlert && (
+          <Alert className="mb-4 bg-amber-50 text-amber-800 border-amber-200">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Verify your email</AlertTitle>
+            <AlertDescription>
+              Please check your email and click the verification link to activate your account.
+              <div className="mt-2">
+                <Button variant="outline" size="sm" onClick={resendVerificationEmail}>
+                  <Mail className="mr-2 h-4 w-4" />
+                  Resend verification email
+                </Button>
+              </div>
+            </AlertDescription>
+          </Alert>
+        )}
+
         <Tabs defaultValue="login">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="login">Login</TabsTrigger>
