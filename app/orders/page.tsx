@@ -10,40 +10,11 @@ import Link from "next/link"
 import { Loader2, Package, ShoppingBag } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 
-interface OrderItem {
-  id: string
-  order_id: string
-  product_id: string
-  quantity: number
-  price: number
-  products?: {
-    name: string
-    image_url?: string
-  }
-}
-
-interface Order {
-  id: string
-  user_id: string
-  total: number
-  status: string
-  created_at: string
-  first_name: string
-  last_name: string
-  email: string
-  phone: string
-  address: string
-  city: string
-  state: string
-  postal_code: string
-  items?: OrderItem[]
-}
-
 export default function OrdersPage() {
   const { user } = useAuth()
-  const [orders, setOrders] = useState<Order[]>([])
+  const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState(null)
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -55,32 +26,53 @@ export default function OrdersPage() {
       try {
         const supabase = createClient()
 
-        // Fetch orders
-        const { data: ordersData, error: ordersError } = await supabase
+        // Simple query to get orders without joins
+        const { data, error } = await supabase
           .from("orders")
           .select("*")
           .eq("user_id", user.id)
           .order("created_at", { ascending: false })
 
-        if (ordersError) throw ordersError
+        if (error) throw error
 
-        // Fetch order items for each order
-        const ordersWithItems = await Promise.all(
-          (ordersData || []).map(async (order) => {
-            const { data: itemsData } = await supabase
-              .from("order_items")
-              .select("*, products(name, image_url)")
-              .eq("order_id", order.id)
+        // Fetch items separately for each order to avoid complex joins
+        const ordersWithItems = []
+        for (const order of data || []) {
+          try {
+            const { data: items } = await supabase.from("order_items").select("*, product_id").eq("order_id", order.id)
 
-            return {
+            // Get product details separately
+            const productIds = items.map((item) => item.product_id)
+            const { data: products } = await supabase
+              .from("products")
+              .select("id, name, image_url")
+              .in("id", productIds)
+
+            // Map products to items
+            const itemsWithProducts = items.map((item) => {
+              const product = products.find((p) => p.id === item.product_id)
+              return {
+                ...item,
+                products: product,
+              }
+            })
+
+            ordersWithItems.push({
               ...order,
-              items: itemsData || [],
-            }
-          }),
-        )
+              items: itemsWithProducts,
+            })
+          } catch (itemError) {
+            console.error("Error fetching items for order:", order.id, itemError)
+            // Still add the order even if items fetch fails
+            ordersWithItems.push({
+              ...order,
+              items: [],
+            })
+          }
+        }
 
         setOrders(ordersWithItems)
-      } catch (err: any) {
+      } catch (err) {
         console.error("Error fetching orders:", err)
         setError(err.message || "Failed to load orders")
       } finally {
