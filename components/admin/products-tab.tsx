@@ -16,7 +16,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { toast } from "@/components/ui/use-toast"
@@ -53,6 +52,7 @@ export default function ProductsTab() {
     stock: 0,
     featured: false,
   })
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   useEffect(() => {
     fetchProducts()
@@ -111,16 +111,24 @@ export default function ProductsTab() {
 
   const handleAddProduct = async () => {
     try {
+      setIsSubmitting(true)
       const supabase = createClient()
+
+      // Generate a slug from the name
+      const slug = formData.name
+        .toLowerCase()
+        .replace(/[^\w\s-]/g, "")
+        .replace(/\s+/g, "-")
 
       const { data, error } = await supabase
         .from("products")
         .insert({
           name: formData.name,
+          slug: slug,
           description: formData.description,
-          price: Number.parseFloat(formData.price),
+          price: Number(formData.price),
           image_url: formData.image_url,
-          category_id: formData.category_id,
+          category_id: formData.category_id || null,
           stock: formData.stock,
           featured: formData.featured,
         })
@@ -128,7 +136,9 @@ export default function ProductsTab() {
 
       if (error) throw error
 
-      setProducts([data[0], ...products])
+      // Refresh products list
+      await fetchProducts()
+
       setIsAddDialogOpen(false)
       resetForm()
 
@@ -136,13 +146,15 @@ export default function ProductsTab() {
         title: "Success",
         description: "Product added successfully",
       })
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error adding product:", error)
       toast({
         title: "Error",
-        description: "Failed to add product. Please try again.",
+        description: error.message || "Failed to add product. Please try again.",
         variant: "destructive",
       })
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -150,16 +162,27 @@ export default function ProductsTab() {
     if (!currentProduct) return
 
     try {
+      setIsSubmitting(true)
       const supabase = createClient()
+
+      // Generate a slug from the name if name changed
+      let slug = currentProduct.slug
+      if (formData.name !== currentProduct.name) {
+        slug = formData.name
+          .toLowerCase()
+          .replace(/[^\w\s-]/g, "")
+          .replace(/\s+/g, "-")
+      }
 
       const { error } = await supabase
         .from("products")
         .update({
           name: formData.name,
+          slug: slug,
           description: formData.description,
-          price: Number.parseFloat(formData.price),
+          price: Number(formData.price),
           image_url: formData.image_url,
-          category_id: formData.category_id,
+          category_id: formData.category_id || null,
           stock: formData.stock,
           featured: formData.featured,
         })
@@ -167,22 +190,8 @@ export default function ProductsTab() {
 
       if (error) throw error
 
-      setProducts(
-        products.map((product) =>
-          product.id === currentProduct.id
-            ? {
-                ...product,
-                name: formData.name,
-                description: formData.description,
-                price: Number.parseFloat(formData.price),
-                image_url: formData.image_url,
-                category_id: formData.category_id,
-                stock: formData.stock,
-                featured: formData.featured,
-              }
-            : product,
-        ),
-      )
+      // Refresh products list
+      await fetchProducts()
 
       setIsEditDialogOpen(false)
       setCurrentProduct(null)
@@ -192,13 +201,15 @@ export default function ProductsTab() {
         title: "Success",
         description: "Product updated successfully",
       })
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error updating product:", error)
       toast({
         title: "Error",
-        description: "Failed to update product. Please try again.",
+        description: error.message || "Failed to update product. Please try again.",
         variant: "destructive",
       })
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -206,13 +217,16 @@ export default function ProductsTab() {
     if (!currentProduct) return
 
     try {
+      setIsSubmitting(true)
       const supabase = createClient()
 
       const { error } = await supabase.from("products").delete().eq("id", currentProduct.id)
 
       if (error) throw error
 
-      setProducts(products.filter((product) => product.id !== currentProduct.id))
+      // Refresh products list
+      await fetchProducts()
+
       setIsDeleteDialogOpen(false)
       setCurrentProduct(null)
 
@@ -220,13 +234,15 @@ export default function ProductsTab() {
         title: "Success",
         description: "Product deleted successfully",
       })
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error deleting product:", error)
       toast({
         title: "Error",
-        description: "Failed to delete product. Please try again.",
+        description: error.message || "Failed to delete product. Please try again.",
         variant: "destructive",
       })
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -261,111 +277,9 @@ export default function ProductsTab() {
     <div>
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold">Products</h2>
-        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-green-600 hover:bg-green-700">
-              <Plus className="mr-2 h-4 w-4" /> Add Product
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[550px]">
-            <DialogHeader>
-              <DialogTitle>Add New Product</DialogTitle>
-              <DialogDescription>Fill in the details to add a new product to your inventory.</DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="name" className="text-right">
-                  Name
-                </Label>
-                <Input
-                  id="name"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleInputChange}
-                  className="col-span-3"
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="price" className="text-right">
-                  Price (₦)
-                </Label>
-                <Input
-                  id="price"
-                  name="price"
-                  type="number"
-                  value={formData.price}
-                  onChange={handleInputChange}
-                  className="col-span-3"
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="category_id" className="text-right">
-                  Category ID
-                </Label>
-                <Input
-                  id="category_id"
-                  name="category_id"
-                  value={formData.category_id}
-                  onChange={handleInputChange}
-                  className="col-span-3"
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="image_url" className="text-right">
-                  Image URL
-                </Label>
-                <Input
-                  id="image_url"
-                  name="image_url"
-                  value={formData.image_url}
-                  onChange={handleInputChange}
-                  className="col-span-3"
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="description" className="text-right">
-                  Description
-                </Label>
-                <Textarea
-                  id="description"
-                  name="description"
-                  value={formData.description}
-                  onChange={handleInputChange}
-                  className="col-span-3"
-                  rows={3}
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="stock" className="text-right">
-                  Stock
-                </Label>
-                <Input
-                  id="stock"
-                  name="stock"
-                  type="number"
-                  value={formData.stock}
-                  onChange={(e) => setFormData({ ...formData, stock: Number.parseInt(e.target.value) || 0 })}
-                  className="col-span-3"
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="featured" className="text-right">
-                  Featured
-                </Label>
-                <div className="flex items-center space-x-2 col-span-3">
-                  <Switch id="featured" checked={formData.featured} onCheckedChange={handleSwitchChange} />
-                  <Label htmlFor="featured">{formData.featured ? "Yes" : "No"}</Label>
-                </div>
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleAddProduct}>Add Product</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <Button className="bg-green-600 hover:bg-green-700" onClick={() => setIsAddDialogOpen(true)}>
+          <Plus className="mr-2 h-4 w-4" /> Add Product
+        </Button>
       </div>
 
       {products.length === 0 ? (
@@ -379,6 +293,7 @@ export default function ProductsTab() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-[80px]">Image</TableHead>
                 <TableHead>Product</TableHead>
                 <TableHead>Category</TableHead>
                 <TableHead>Price</TableHead>
@@ -443,6 +358,110 @@ export default function ProductsTab() {
           </Table>
         </div>
       )}
+
+      {/* Add Product Dialog */}
+      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+        <DialogContent className="sm:max-w-[550px]">
+          <DialogHeader>
+            <DialogTitle>Add New Product</DialogTitle>
+            <DialogDescription>Fill in the details to add a new product to your inventory.</DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="name" className="text-right">
+                Name
+              </Label>
+              <Input id="name" name="name" value={formData.name} onChange={handleInputChange} className="col-span-3" />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="price" className="text-right">
+                Price (₦)
+              </Label>
+              <Input
+                id="price"
+                name="price"
+                type="number"
+                value={formData.price}
+                onChange={handleInputChange}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="category_id" className="text-right">
+                Category ID
+              </Label>
+              <Input
+                id="category_id"
+                name="category_id"
+                value={formData.category_id}
+                onChange={handleInputChange}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="image_url" className="text-right">
+                Image URL
+              </Label>
+              <Input
+                id="image_url"
+                name="image_url"
+                value={formData.image_url}
+                onChange={handleInputChange}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="description" className="text-right">
+                Description
+              </Label>
+              <Textarea
+                id="description"
+                name="description"
+                value={formData.description}
+                onChange={handleInputChange}
+                className="col-span-3"
+                rows={3}
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="stock" className="text-right">
+                Stock
+              </Label>
+              <Input
+                id="stock"
+                name="stock"
+                type="number"
+                value={formData.stock}
+                onChange={(e) => setFormData({ ...formData, stock: Number(e.target.value) || 0 })}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="featured" className="text-right">
+                Featured
+              </Label>
+              <div className="flex items-center space-x-2 col-span-3">
+                <Switch id="featured" checked={formData.featured} onCheckedChange={handleSwitchChange} />
+                <Label htmlFor="featured">{formData.featured ? "Yes" : "No"}</Label>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsAddDialogOpen(false)} disabled={isSubmitting}>
+              Cancel
+            </Button>
+            <Button onClick={handleAddProduct} disabled={isSubmitting}>
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Adding...
+                </>
+              ) : (
+                "Add Product"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Edit Product Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
@@ -523,7 +542,7 @@ export default function ProductsTab() {
                 name="stock"
                 type="number"
                 value={formData.stock}
-                onChange={(e) => setFormData({ ...formData, stock: Number.parseInt(e.target.value) || 0 })}
+                onChange={(e) => setFormData({ ...formData, stock: Number(e.target.value) || 0 })}
                 className="col-span-3"
               />
             </div>
@@ -538,10 +557,18 @@ export default function ProductsTab() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)} disabled={isSubmitting}>
               Cancel
             </Button>
-            <Button onClick={handleEditProduct}>Save Changes</Button>
+            <Button onClick={handleEditProduct} disabled={isSubmitting}>
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...
+                </>
+              ) : (
+                "Save Changes"
+              )}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -560,11 +587,17 @@ export default function ProductsTab() {
             <p className="text-sm text-muted-foreground mt-1">Price: ₦{currentProduct?.price.toLocaleString()}</p>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
+            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)} disabled={isSubmitting}>
               Cancel
             </Button>
-            <Button variant="destructive" onClick={handleDeleteProduct}>
-              Delete
+            <Button variant="destructive" onClick={handleDeleteProduct} disabled={isSubmitting}>
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Deleting...
+                </>
+              ) : (
+                "Delete"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

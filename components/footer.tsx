@@ -67,12 +67,12 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/careers" className="text-green-100 hover:text-white">
+                <Link href="/about" className="text-green-100 hover:text-white">
                   Careers
                 </Link>
               </li>
               <li>
-                <Link href="/blog" className="text-green-100 hover:text-white">
+                <Link href="/about" className="text-green-100 hover:text-white">
                   Blog
                 </Link>
               </li>
@@ -83,22 +83,22 @@ export default function Footer() {
             <h3 className="font-semibold mb-4">Help</h3>
             <ul className="space-y-2">
               <li>
-                <Link href="/faq" className="text-green-100 hover:text-white">
+                <Link href="/about" className="text-green-100 hover:text-white">
                   FAQ
                 </Link>
               </li>
               <li>
-                <Link href="/shipping" className="text-green-100 hover:text-white">
+                <Link href="/about" className="text-green-100 hover:text-white">
                   Shipping & Delivery
                 </Link>
               </li>
               <li>
-                <Link href="/returns" className="text-green-100 hover:text-white">
+                <Link href="/about" className="text-green-100 hover:text-white">
                   Returns & Refunds
                 </Link>
               </li>
               <li>
-                <Link href="/privacy" className="text-green-100 hover:text-white">
+                <Link href="/about" className="text-green-100 hover:text-white">
                   Privacy Policy
                 </Link>
               </li>

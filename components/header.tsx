@@ -31,6 +31,7 @@ export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const [isAdmin, setIsAdmin] = useState(false)
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
 
   // Check if user is admin
   useEffect(() => {
@@ -105,12 +106,23 @@ export default function Header() {
 
   const handleSignOut = async () => {
     try {
-      await signOut()
+      setIsLoggingOut(true)
 
-      // Force page reload to ensure all state is cleared
+      // Clear local storage
+      localStorage.removeItem("cart")
+
+      // Get Supabase client
+      const supabase = createClient()
+
+      // Sign out from Supabase
+      await supabase.auth.signOut()
+
+      // Force a hard refresh to clear all state
       window.location.href = "/"
     } catch (error) {
       console.error("Error signing out:", error)
+      // Even if there's an error, force a refresh
+      window.location.href = "/"
     }
   }
 
@@ -199,10 +211,17 @@ export default function Header() {
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     onClick={handleSignOut}
+                    disabled={isLoggingOut}
                     className="flex items-center text-red-600 focus:text-red-600"
                   >
-                    <LogOut className="h-4 w-4 mr-2" />
-                    Logout
+                    {isLoggingOut ? (
+                      <>Logging out...</>
+                    ) : (
+                      <>
+                        <LogOut className="h-4 w-4 mr-2" />
+                        Logout
+                      </>
+                    )}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -343,13 +362,11 @@ export default function Header() {
                   </Link>
                   <button
                     className="px-4 py-2 text-sm font-medium text-left text-red-600 transition-colors hover:bg-muted w-full flex items-center"
-                    onClick={() => {
-                      handleSignOut()
-                      setIsMenuOpen(false)
-                    }}
+                    onClick={handleSignOut}
+                    disabled={isLoggingOut}
                   >
                     <LogOut className="h-4 w-4 mr-2" />
-                    Logout
+                    {isLoggingOut ? "Logging out..." : "Logout"}
                   </button>
                 </>
               ) : (
