@@ -31,6 +31,7 @@ interface Product {
   stock: number
   featured: boolean
   created_at: string
+  slug?: string
   categories?: {
     name: string
   }
@@ -109,30 +110,32 @@ export default function ProductsTab() {
     })
   }
 
+  const generateSlug = (name: string) => {
+    return name
+      .toLowerCase()
+      .replace(/[^\w\s-]/g, "")
+      .replace(/\s+/g, "-")
+  }
+
   const handleAddProduct = async () => {
     try {
       setIsSubmitting(true)
       const supabase = createClient()
 
       // Generate a slug from the name
-      const slug = formData.name
-        .toLowerCase()
-        .replace(/[^\w\s-]/g, "")
-        .replace(/\s+/g, "-")
+      const slug = generateSlug(formData.name)
 
-      const { data, error } = await supabase
-        .from("products")
-        .insert({
-          name: formData.name,
-          slug: slug,
-          description: formData.description,
-          price: Number(formData.price),
-          image_url: formData.image_url,
-          category_id: formData.category_id || null,
-          stock: formData.stock,
-          featured: formData.featured,
-        })
-        .select()
+      // Use the RPC function to insert the product
+      const { data, error } = await supabase.rpc("admin_insert_product", {
+        product_name: formData.name,
+        product_slug: slug,
+        product_description: formData.description,
+        product_price: Number(formData.price),
+        product_image_url: formData.image_url,
+        product_category_id: formData.category_id || null,
+        product_stock: formData.stock,
+        product_featured: formData.featured,
+      })
 
       if (error) throw error
 
@@ -166,27 +169,23 @@ export default function ProductsTab() {
       const supabase = createClient()
 
       // Generate a slug from the name if name changed
-      let slug = currentProduct.slug
+      let slug = currentProduct.slug || generateSlug(currentProduct.name)
       if (formData.name !== currentProduct.name) {
-        slug = formData.name
-          .toLowerCase()
-          .replace(/[^\w\s-]/g, "")
-          .replace(/\s+/g, "-")
+        slug = generateSlug(formData.name)
       }
 
-      const { error } = await supabase
-        .from("products")
-        .update({
-          name: formData.name,
-          slug: slug,
-          description: formData.description,
-          price: Number(formData.price),
-          image_url: formData.image_url,
-          category_id: formData.category_id || null,
-          stock: formData.stock,
-          featured: formData.featured,
-        })
-        .eq("id", currentProduct.id)
+      // Use the RPC function to update the product
+      const { data, error } = await supabase.rpc("admin_update_product", {
+        product_id: currentProduct.id,
+        product_name: formData.name,
+        product_slug: slug,
+        product_description: formData.description,
+        product_price: Number(formData.price),
+        product_image_url: formData.image_url,
+        product_category_id: formData.category_id || null,
+        product_stock: formData.stock,
+        product_featured: formData.featured,
+      })
 
       if (error) throw error
 
@@ -220,7 +219,10 @@ export default function ProductsTab() {
       setIsSubmitting(true)
       const supabase = createClient()
 
-      const { error } = await supabase.from("products").delete().eq("id", currentProduct.id)
+      // Use the RPC function to delete the product
+      const { data, error } = await supabase.rpc("admin_delete_product", {
+        product_id: currentProduct.id,
+      })
 
       if (error) throw error
 
