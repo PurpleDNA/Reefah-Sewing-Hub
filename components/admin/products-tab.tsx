@@ -137,7 +137,16 @@ export default function ProductsTab() {
         product_featured: formData.featured,
       })
 
-      if (error) throw error
+      if (error) {
+        console.error("RPC Error:", error)
+        throw error
+      }
+
+      if (data === null) {
+        throw new Error("Failed to create product. No ID returned.")
+      }
+
+      console.log("Product created with ID:", data)
 
       // Refresh products list
       await fetchProducts()
@@ -174,6 +183,18 @@ export default function ProductsTab() {
         slug = generateSlug(formData.name)
       }
 
+      console.log("Updating product with data:", {
+        product_id: currentProduct.id,
+        product_name: formData.name,
+        product_slug: slug,
+        product_description: formData.description,
+        product_price: Number(formData.price),
+        product_image_url: formData.image_url,
+        product_category_id: formData.category_id || null,
+        product_stock: formData.stock,
+        product_featured: formData.featured,
+      })
+
       // Use the RPC function to update the product
       const { data, error } = await supabase.rpc("admin_update_product", {
         product_id: currentProduct.id,
@@ -187,7 +208,16 @@ export default function ProductsTab() {
         product_featured: formData.featured,
       })
 
-      if (error) throw error
+      if (error) {
+        console.error("RPC Error:", error)
+        throw error
+      }
+
+      console.log("Update result:", data)
+
+      if (data === false) {
+        throw new Error("Failed to update product. No rows affected.")
+      }
 
       // Refresh products list
       await fetchProducts()
@@ -219,12 +249,23 @@ export default function ProductsTab() {
       setIsSubmitting(true)
       const supabase = createClient()
 
+      console.log("Deleting product with ID:", currentProduct.id)
+
       // Use the RPC function to delete the product
       const { data, error } = await supabase.rpc("admin_delete_product", {
         product_id: currentProduct.id,
       })
 
-      if (error) throw error
+      if (error) {
+        console.error("RPC Error:", error)
+        throw error
+      }
+
+      console.log("Delete result:", data)
+
+      if (data === false) {
+        throw new Error("Failed to delete product. No rows affected.")
+      }
 
       // Refresh products list
       await fetchProducts()
