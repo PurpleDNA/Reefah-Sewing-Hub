@@ -7,8 +7,8 @@ import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { toast } from "@/components/ui/use-toast"
 import { Loader2 } from "lucide-react"
+import { useCustomToast } from "@/hooks/use-custom-toast"
 
 interface OrderStatusFormProps {
   orderId: string
@@ -19,6 +19,7 @@ export function OrderStatusForm({ orderId, currentStatus }: OrderStatusFormProps
   const router = useRouter()
   const [status, setStatus] = useState(currentStatus)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const { showSuccess, showError } = useCustomToast()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -31,18 +32,11 @@ export function OrderStatusForm({ orderId, currentStatus }: OrderStatusFormProps
 
       if (error) throw error
 
-      toast({
-        title: "Order updated",
-        description: "The order status has been updated successfully.",
-      })
+      showSuccess("The order status has been updated successfully.", "Order updated")
 
       router.refresh()
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Something went wrong. Please try again.",
-        variant: "destructive",
-      })
+      showError(error.message || "Something went wrong. Please try again.", "Error")
     } finally {
       setIsSubmitting(false)
     }

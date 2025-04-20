@@ -8,7 +8,7 @@ import Link from "next/link"
 import { Search } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
-export default async function AdminOrders({ searchParams }: { searchParams: { status?: string } }) {
+export default async function AdminOrders({ searchParams }: { searchParams: { status?: string; query?: string } }) {
   const supabase = createClient()
 
   // Build query
@@ -22,7 +22,18 @@ export default async function AdminOrders({ searchParams }: { searchParams: { st
     query = query.eq("status", searchParams.status)
   }
 
-  const { data: orders } = await query
+  // Apply search filter if provided
+  if (searchParams.query) {
+    query = query.or(
+      `first_name.ilike.%${searchParams.query}%,last_name.ilike.%${searchParams.query}%,email.ilike.%${searchParams.query}%`,
+    )
+  }
+
+  const { data: orders, error } = await query
+
+  if (error) {
+    console.error("Error fetching orders:", error)
+  }
 
   return (
     <div>
@@ -35,7 +46,12 @@ export default async function AdminOrders({ searchParams }: { searchParams: { st
           <form className="flex gap-4">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input name="query" placeholder="Search orders..." className="pl-10" />
+              <Input
+                name="query"
+                placeholder="Search by name or email..."
+                className="pl-10"
+                defaultValue={searchParams.query || ""}
+              />
             </div>
             <Select name="status" defaultValue={searchParams.status || "all"}>
               <SelectTrigger className="w-[180px]">
@@ -90,7 +106,9 @@ export default async function AdminOrders({ searchParams }: { searchParams: { st
                               ? "bg-green-50 text-green-700"
                               : order.status === "cancelled"
                                 ? "bg-red-50 text-red-700"
-                                : "bg-amber-50 text-amber-700"
+                                : order.status === "shipped"
+                                  ? "bg-blue-50 text-blue-700"
+                                  : "bg-amber-50 text-amber-700"
                           }
                         `}
                       >
@@ -107,7 +125,7 @@ export default async function AdminOrders({ searchParams }: { searchParams: { st
               ) : (
                 <TableRow>
                   <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                    No orders found
+                    {error ? "Error loading orders" : "No orders found"}
                   </TableCell>
                 </TableRow>
               )}

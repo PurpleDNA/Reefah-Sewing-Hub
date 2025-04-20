@@ -8,6 +8,8 @@ import Footer from "@/components/footer"
 import { Toaster } from "@/components/ui/toaster"
 import { CartProvider } from "@/components/cart-provider"
 import { AuthProvider } from "@/components/auth-provider"
+import { VercelAnalytics } from "@/components/analytics"
+import { Suspense } from "react"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -28,14 +30,17 @@ export default function RootLayout({
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           <AuthProvider>
             <CartProvider>
-              <div className="flex min-h-screen flex-col">
-                <Header />
-                <main className="flex-1">{children}</main>
-                <Footer />
-                <Toaster />
-              </div>
+              <Suspense fallback={<div>Loading...</div>}>
+                <div className="flex min-h-screen flex-col">
+                  <Header />
+                  <main className="flex-1">{children}</main>
+                  <Footer />
+                  <Toaster />
+                </div>
+              </Suspense>
             </CartProvider>
           </AuthProvider>
+          <VercelAnalytics />
         </ThemeProvider>
       </body>
     </html>

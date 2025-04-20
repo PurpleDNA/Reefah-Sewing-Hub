@@ -157,6 +157,7 @@ export default function ProductsTab() {
       toast({
         title: "Success",
         description: "Product added successfully",
+        duration: 5000, // 5 seconds
       })
     } catch (error: any) {
       console.error("Error adding product:", error)
@@ -164,6 +165,7 @@ export default function ProductsTab() {
         title: "Error",
         description: error.message || "Failed to add product. Please try again.",
         variant: "destructive",
+        duration: 7000, // 7 seconds for errors
       })
     } finally {
       setIsSubmitting(false)
@@ -229,6 +231,7 @@ export default function ProductsTab() {
       toast({
         title: "Success",
         description: "Product updated successfully",
+        duration: 5000, // 5 seconds
       })
     } catch (error: any) {
       console.error("Error updating product:", error)
@@ -236,6 +239,7 @@ export default function ProductsTab() {
         title: "Error",
         description: error.message || "Failed to update product. Please try again.",
         variant: "destructive",
+        duration: 7000, // 7 seconds for errors
       })
     } finally {
       setIsSubmitting(false)
@@ -276,6 +280,7 @@ export default function ProductsTab() {
       toast({
         title: "Success",
         description: "Product deleted successfully",
+        duration: 5000, // 5 seconds
       })
     } catch (error: any) {
       console.error("Error deleting product:", error)
@@ -283,6 +288,7 @@ export default function ProductsTab() {
         title: "Error",
         description: error.message || "Failed to delete product. Please try again.",
         variant: "destructive",
+        duration: 7000, // 7 seconds for errors
       })
     } finally {
       setIsSubmitting(false)
