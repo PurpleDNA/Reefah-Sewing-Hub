@@ -1,27 +1,17 @@
--- Check if the functions exist and drop them if they do
-DO $$ 
-BEGIN
-  IF EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'admin_delete_product') THEN
-    DROP FUNCTION public.admin_delete_product;
-  END IF;
-  
-  IF EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'admin_update_product') THEN
-    DROP FUNCTION public.admin_update_product;
-  END IF;
-  
-  IF EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'admin_insert_product') THEN
-    DROP FUNCTION public.admin_insert_product;
-  END IF;
-END $$;
+-- Drop existing functions to recreate them with proper permissions
+DROP FUNCTION IF EXISTS public.admin_delete_product(UUID);
+DROP FUNCTION IF EXISTS public.admin_update_product(UUID, TEXT, TEXT, TEXT, NUMERIC, TEXT, UUID, INTEGER, BOOLEAN);
+DROP FUNCTION IF EXISTS public.admin_insert_product(TEXT, TEXT, TEXT, NUMERIC, TEXT, UUID, INTEGER, BOOLEAN);
 
--- Create an improved function to safely delete products without triggering RLS recursion
+-- Create an improved function to safely delete products
 CREATE OR REPLACE FUNCTION public.admin_delete_product(product_id UUID)
 RETURNS BOOLEAN AS $$
 DECLARE
   rows_affected INTEGER;
 BEGIN
-  DELETE FROM products WHERE id = product_id RETURNING 1 INTO rows_affected;
-  RETURN FOUND;
+  DELETE FROM products WHERE id = product_id;
+  GET DIAGNOSTICS rows_affected = ROW_COUNT;
+  RETURN rows_affected > 0;
 EXCEPTION
   WHEN OTHERS THEN
     RAISE NOTICE 'Error in admin_delete_product: %', SQLERRM;
@@ -29,7 +19,7 @@ EXCEPTION
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Create an improved function to safely update products without triggering RLS recursion
+-- Create an improved function to safely update products
 CREATE OR REPLACE FUNCTION public.admin_update_product(
   product_id UUID,
   product_name TEXT,
@@ -56,10 +46,10 @@ BEGIN
     stock = product_stock,
     featured = product_featured,
     updated_at = NOW()
-  WHERE id = product_id
-  RETURNING 1 INTO rows_affected;
+  WHERE id = product_id;
   
-  RETURN FOUND;
+  GET DIAGNOSTICS rows_affected = ROW_COUNT;
+  RETURN rows_affected > 0;
 EXCEPTION
   WHEN OTHERS THEN
     RAISE NOTICE 'Error in admin_update_product: %', SQLERRM;
@@ -67,7 +57,7 @@ EXCEPTION
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Create an improved function to safely insert products without triggering RLS recursion
+-- Create an improved function to safely insert products
 CREATE OR REPLACE FUNCTION public.admin_insert_product(
   product_name TEXT,
   product_slug TEXT,
@@ -114,3 +104,27 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 GRANT EXECUTE ON FUNCTION public.admin_delete_product(UUID) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.admin_update_product(UUID, TEXT, TEXT, TEXT, NUMERIC, TEXT, UUID, INTEGER, BOOLEAN) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.admin_insert_product(TEXT, TEXT, TEXT, NUMERIC, TEXT, UUID, INTEGER, BOOLEAN) TO authenticated;
+
+-- Ensure RLS is not blocking these operations
+ALTER TABLE products ENABLE ROW LEVEL SECURITY;
+
+-- Create a policy that allows admins to do anything with products
+DROP POLICY IF EXISTS "Admin users can manage products" ON products;
+CREATE POLICY "Admin users can manage products" ON products
+USING (
+  EXISTS (
+    SELECT 1 FROM profiles
+    WHERE profiles.id = auth.uid() AND profiles.is_admin = true
+  )
+)
+WITH CHECK (
+  EXISTS (
+    SELECT 1 FROM profiles
+    WHERE profiles.id = auth.uid() AND profiles.is_admin = true
+  )
+);
+
+-- Create a policy that allows all users to view products
+DROP POLICY IF EXISTS "Everyone can view products" ON products;
+CREATE POLICY "Everyone can view products" ON products
+FOR SELECT USING (true);
