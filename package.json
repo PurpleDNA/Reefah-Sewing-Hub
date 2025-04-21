@@ -58,17 +58,17 @@
     "tailwindcss-animate": "^1.0.7",
     "vaul": "^0.9.6",
     "zod": "^3.24.1",
-    "@supabase/supabase-js": "latest",
-    "@emotion/is-prop-valid": "latest",
     "@remix-run/react": "latest",
     "@sveltejs/kit": "latest",
     "svelte": "latest",
     "vue": "latest",
     "vue-router": "latest",
-    "@supabase/ssr": "latest",
+    "@emotion/is-prop-valid": "latest",
+    "@supabase/supabase-js": "latest",
     "react-icons": "latest",
+    "@vercel/analytics": "latest",
     "framer-motion": "latest",
-    "@vercel/analytics": "latest"
+    "@supabase/ssr": "latest"
   },
   "devDependencies": {
     "@types/node": "^22",
