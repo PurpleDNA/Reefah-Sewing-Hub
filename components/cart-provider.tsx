@@ -24,6 +24,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const isMountedRef = useRef(true)
   const [isInitialized, setIsInitialized] = useState(false)
   const supabaseRef = useRef<any>(null)
+  const isUpdatingRef = useRef(false)
+  const pendingUpdateRef = useRef<CartItem[] | null>(null)
 
   // Initialize Supabase client
   useEffect(() => {
@@ -36,17 +38,26 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  // Load cart from localStorage or Supabase on mount
+  // Load cart from localStorage or Supabase on mount or user change
   useEffect(() => {
     const loadCart = async () => {
       try {
+        console.log("Loading cart, user:", user?.id)
+
         // Always try to load from localStorage first for quick display
         const storedCart = localStorage.getItem("cart")
+        let localItems: CartItem[] = []
+
         if (storedCart) {
           try {
-            const parsedCart = JSON.parse(storedCart)
-            console.log("Loading cart from localStorage:", parsedCart)
-            setItems(parsedCart)
+            localItems = JSON.parse(storedCart)
+            console.log("Loaded cart from localStorage:", localItems.length, "items")
+
+            // Only set items from localStorage if we don't have a user
+            // or if we haven't loaded from Supabase yet
+            if (!user) {
+              setItems(localItems)
+            }
           } catch (error) {
             console.error("Failed to parse cart from localStorage:", error)
           }
@@ -59,17 +70,22 @@ export function CartProvider({ children }: { children: ReactNode }) {
               supabaseRef.current = createClient()
             }
 
-            // Fix: Use select("*") instead of select("items")
+            console.log("Fetching cart from Supabase for user:", user.id)
             const { data, error } = await supabaseRef.current
               .from("carts")
               .select("*")
               .eq("user_id", user.id)
               .maybeSingle()
 
-            console.log("Loading cart from Supabase:", { data, error, userId: user.id })
+            console.log("Supabase cart response:", { data, error })
 
             if (data?.items && isMountedRef.current && Array.isArray(data.items)) {
+              console.log("Setting cart from Supabase:", data.items.length, "items")
               setItems(data.items)
+            } else if (isMountedRef.current && localItems.length > 0) {
+              // If no Supabase cart but we have local items, use those
+              console.log("No Supabase cart found, using localStorage items")
+              setItems(localItems)
             }
           } catch (error) {
             console.error("Failed to load cart from Supabase:", error)
@@ -85,6 +101,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
       }
     }
 
+    // Reset initialization when user changes
+    if (isInitialized) {
+      setIsInitialized(false)
+    }
+
     loadCart()
 
     return () => {
@@ -96,22 +117,32 @@ export function CartProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!isInitialized) return
 
-    // Use a ref to track if we're currently updating to prevent loops
-    const updateCart = async () => {
-      // Always save to localStorage for quick access
-      try {
-        localStorage.setItem("cart", JSON.stringify(items))
-      } catch (error) {
-        console.error("Failed to save cart to localStorage:", error)
-      }
+    // Always save to localStorage for quick access
+    try {
+      localStorage.setItem("cart", JSON.stringify(items))
+      console.log("Saved cart to localStorage:", items.length, "items")
+    } catch (error) {
+      console.error("Failed to save cart to localStorage:", error)
+    }
 
-      // If user is logged in, also save to Supabase
-      if (user) {
+    // If user is logged in, also save to Supabase with debounce
+    if (user) {
+      const updateSupabaseCart = async () => {
+        // If already updating, store this update for later
+        if (isUpdatingRef.current) {
+          console.log("Already updating cart, storing pending update")
+          pendingUpdateRef.current = [...items]
+          return
+        }
+
+        isUpdatingRef.current = true
+
         try {
           if (!supabaseRef.current) {
             supabaseRef.current = createClient()
           }
 
+          console.log("Checking if cart exists for user:", user.id)
           // First check if cart exists
           const { data, error } = await supabaseRef.current
             .from("carts")
@@ -121,34 +152,64 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
           if (data) {
             // Update existing cart
-            await supabaseRef.current
+            console.log("Updating existing cart for user:", user.id)
+            const { error: updateError } = await supabaseRef.current
               .from("carts")
               .update({
                 items,
                 updated_at: new Date().toISOString(),
               })
               .eq("user_id", user.id)
+
+            if (updateError) {
+              console.error("Failed to update cart in Supabase:", updateError)
+            } else {
+              console.log("Cart updated successfully in Supabase")
+            }
           } else if (!error) {
             // Create new cart
-            await supabaseRef.current.from("carts").insert({
+            console.log("Creating new cart for user:", user.id)
+            const { error: insertError } = await supabaseRef.current.from("carts").insert({
               user_id: user.id,
               items,
             })
+
+            if (insertError) {
+              console.error("Failed to create cart in Supabase:", insertError)
+            } else {
+              console.log("New cart created successfully in Supabase")
+            }
           }
         } catch (error) {
           console.error("Failed to save cart to Supabase:", error)
+        } finally {
+          isUpdatingRef.current = false
+
+          // If there's a pending update, process it
+          if (pendingUpdateRef.current) {
+            console.log("Processing pending cart update")
+            const pendingItems = pendingUpdateRef.current
+            pendingUpdateRef.current = null
+
+            // Small delay to prevent potential race conditions
+            setTimeout(() => {
+              if (isMountedRef.current) {
+                updateSupabaseCart()
+              }
+            }, 100)
+          }
         }
       }
+
+      // Debounce the update to prevent rapid consecutive updates
+      const timeoutId = setTimeout(() => {
+        if (isMountedRef.current) {
+          updateSupabaseCart()
+        }
+      }, 500)
+
+      return () => clearTimeout(timeoutId)
     }
-
-    // Debounce the update to prevent rapid consecutive updates
-    const timeoutId = setTimeout(() => {
-      if (isMountedRef.current) {
-        updateCart()
-      }
-    }, 300)
-
-    return () => clearTimeout(timeoutId)
   }, [items, user, isInitialized])
 
   // Reset the mounted ref when the component unmounts

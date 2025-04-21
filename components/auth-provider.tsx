@@ -2,7 +2,7 @@
 
 import { createContext, useState, useEffect, type ReactNode, useRef } from "react"
 import { createClient } from "@/lib/supabase/client"
-import type { User } from "@supabase/supabase-js"
+import type { User, Session } from "@supabase/supabase-js"
 import { useRouter } from "next/navigation"
 
 // Export the context so it can be imported in the hook
@@ -10,12 +10,14 @@ export interface AuthContextType {
   user: User | null
   signOut: () => Promise<void>
   isLoading: boolean
+  session: Session | null
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
+  const [session, setSession] = useState<Session | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
   const supabaseRef = useRef<any>(null)
@@ -42,12 +44,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!supabaseRef.current) return
       try {
         const {
-          data: { session },
+          data: { session: currentSession },
         } = await supabaseRef.current.auth.getSession()
 
         if (isMounted) {
-          setUser(session?.user ?? null)
+          setSession(currentSession)
+          setUser(currentSession?.user ?? null)
           setIsLoading(false)
+
+          // Debug auth state
+          console.log("Auth state initialized:", {
+            isAuthenticated: !!currentSession,
+            provider: currentSession?.user?.app_metadata?.provider,
+            userId: currentSession?.user?.id,
+          })
         }
       } catch (error) {
         console.error("Error getting session:", error)
@@ -61,14 +71,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const setupAuthListener = async () => {
       if (!supabaseRef.current) return
       try {
-        const { data } = supabaseRef.current.auth.onAuthStateChange(async (_event:any, session:any) => {
+        const { data } = supabaseRef.current.auth.onAuthStateChange(async (event:any, currentSession:any) => {
           if (!isMounted) return
 
-          const currentUser = session?.user ?? null
+          console.log("Auth state changed:", { event, userId: currentSession?.user?.id })
+
+          setSession(currentSession)
+          const currentUser = currentSession?.user ?? null
           setUser(currentUser)
 
           // If user just signed in, check if they have a profile
-          if (currentUser && (_event === "SIGNED_IN" || _event === "USER_UPDATED")) {
+          if (currentUser && (event === "SIGNED_IN" || event === "USER_UPDATED")) {
             try {
               // First check if profile exists
               const { data, error } = await supabaseRef.current
@@ -134,26 +147,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     try {
-      // Clear local storage cart and auth tokens
+      console.log("Starting sign out process")
+
+      // Clear cart data
       localStorage.removeItem("cart")
 
-      // For Google Sign-In, we need to ensure all tokens are cleared
-      localStorage.removeItem("supabase.auth.token")
+      // Get the auth provider before signing out
+      const provider = user?.app_metadata?.provider || "unknown"
+      console.log(`Signing out user with provider: ${provider}`)
 
-      // Get all localStorage keys and remove any that might be related to auth
+      // Clear all Supabase and auth-related items from localStorage
       Object.keys(localStorage).forEach((key) => {
-        if (key.startsWith("supabase.auth.") || key.includes("token")) {
+        if (key.includes("supabase") || key.includes("auth") || key.includes("token") || key.includes("sb-")) {
+          console.log(`Removing localStorage key: ${key}`)
           localStorage.removeItem(key)
         }
       })
 
       // Sign out from Supabase
       if (supabaseRef.current) {
-        await supabaseRef.current.auth.signOut()
+        const { error } = await supabaseRef.current.auth.signOut({ scope: "global" })
+        if (error) {
+          console.error("Error during Supabase signOut:", error)
+        } else {
+          console.log("Supabase signOut successful")
+        }
       }
+
+      // Clear cookies that might be related to auth
+      document.cookie.split(";").forEach((c) => {
+        const cookieName = c.split("=")[0].trim()
+        if (cookieName.includes("supabase") || cookieName.includes("sb-")) {
+          document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`
+          console.log(`Cleared cookie: ${cookieName}`)
+        }
+      })
 
       // Clear user state
       setUser(null)
+      setSession(null)
+
+      console.log("Sign out process completed, redirecting to home page")
 
       // Force a hard refresh to clear any cached state
       window.location.href = "/"
@@ -161,6 +195,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.error("Error signing out:", error)
       // Even if there's an error, try to force logout
       setUser(null)
+      setSession(null)
       window.location.href = "/"
     }
   }
@@ -175,6 +210,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         <AuthContext.Provider
           value={{
             user: null,
+            session: null,
             signOut: async () => {},
             isLoading: false,
           }}
@@ -185,5 +221,5 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  return <AuthContext.Provider value={{ user, signOut, isLoading }}>{children}</AuthContext.Provider>
+  return <AuthContext.Provider value={{ user, session, signOut, isLoading }}>{children}</AuthContext.Provider>
 }

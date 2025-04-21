@@ -54,10 +54,25 @@ export default function ProductsTab() {
     featured: false,
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [categories, setCategories] = useState<{ id: string; name: string }[]>([])
 
   useEffect(() => {
     fetchProducts()
+    fetchCategories()
   }, [])
+
+  const fetchCategories = async () => {
+    try {
+      const supabase = createClient()
+      const { data, error } = await supabase.from("categories").select("id, name").order("name", { ascending: true })
+
+      if (error) throw error
+
+      setCategories(data || [])
+    } catch (error) {
+      console.error("Error fetching categories:", error)
+    }
+  }
 
   const fetchProducts = async () => {
     try {
@@ -70,6 +85,7 @@ export default function ProductsTab() {
 
       if (error) throw error
 
+      console.log("Fetched products:", data)
       setProducts(data || [])
     } catch (error) {
       console.error("Error fetching products:", error)
@@ -118,6 +134,16 @@ export default function ProductsTab() {
   }
 
   const handleAddProduct = async () => {
+    // Validate form data
+    if (!formData.name || !formData.price) {
+      toast({
+        title: "Validation Error",
+        description: "Product name and price are required.",
+        variant: "destructive",
+      })
+      return
+    }
+
     try {
       setIsSubmitting(true)
       const supabase = createClient()
@@ -125,47 +151,96 @@ export default function ProductsTab() {
       // Generate a slug from the name
       const slug = generateSlug(formData.name)
 
-      // Use the RPC function to insert the product
-      const { data, error } = await supabase.rpc("admin_insert_product", {
-        product_name: formData.name,
-        product_slug: slug,
-        product_description: formData.description,
-        product_price: Number(formData.price),
-        product_image_url: formData.image_url,
-        product_category_id: formData.category_id || null,
-        product_stock: formData.stock,
-        product_featured: formData.featured,
+      console.log("Adding product with data:", {
+        name: formData.name,
+        slug,
+        description: formData.description,
+        price: Number(formData.price),
+        image_url: formData.image_url,
+        category_id: formData.category_id || null,
+        stock: formData.stock,
+        featured: formData.featured,
       })
 
-      if (error) {
-        console.error("RPC Error:", error)
-        throw error
+      // Try direct insert first
+      const { data: directData, error: directError } = await supabase
+        .from("products")
+        .insert({
+          name: formData.name,
+          slug: slug,
+          description: formData.description,
+          price: Number(formData.price),
+          image_url: formData.image_url,
+          category_id: formData.category_id || null,
+          stock: formData.stock,
+          featured: formData.featured,
+        })
+        .select()
+
+      if (!directError && directData) {
+        console.log("Product created directly:", directData)
+
+        // Refresh products list
+        await fetchProducts()
+
+        // Close dialog and reset form
+        setIsAddDialogOpen(false)
+        resetForm()
+
+        toast({
+          title: "Success",
+          description: "Product added successfully",
+          duration: 5000,
+        })
+        return
       }
 
-      if (data === null) {
-        throw new Error("Failed to create product. No ID returned.")
+      // If direct insert fails, try RPC
+      if (directError) {
+        console.warn("Direct insert failed, trying RPC:", directError)
+
+        const { data, error } = await supabase.rpc("admin_insert_product", {
+          product_name: formData.name,
+          product_slug: slug,
+          product_description: formData.description,
+          product_price: Number(formData.price),
+          product_image_url: formData.image_url,
+          product_category_id: formData.category_id || null,
+          product_stock: formData.stock,
+          product_featured: formData.featured,
+        })
+
+        if (error) {
+          console.error("RPC Error:", error)
+          throw error
+        }
+
+        if (data === null) {
+          throw new Error("Failed to create product. No ID returned.")
+        }
+
+        console.log("Product created with ID:", data)
+
+        // Refresh products list
+        await fetchProducts()
+
+        // Close dialog and reset form
+        setIsAddDialogOpen(false)
+        resetForm()
+
+        toast({
+          title: "Success",
+          description: "Product added successfully via RPC",
+          duration: 5000,
+        })
       }
-
-      console.log("Product created with ID:", data)
-
-      // Refresh products list
-      await fetchProducts()
-
-      setIsAddDialogOpen(false)
-      resetForm()
-
-      toast({
-        title: "Success",
-        description: "Product added successfully",
-        duration: 5000, // 5 seconds
-      })
     } catch (error: any) {
       console.error("Error adding product:", error)
       toast({
         title: "Error",
         description: error.message || "Failed to add product. Please try again.",
         variant: "destructive",
-        duration: 7000, // 7 seconds for errors
+        duration: 7000,
       })
     } finally {
       setIsSubmitting(false)
@@ -174,6 +249,16 @@ export default function ProductsTab() {
 
   const handleEditProduct = async () => {
     if (!currentProduct) return
+
+    // Validate form data
+    if (!formData.name || !formData.price) {
+      toast({
+        title: "Validation Error",
+        description: "Product name and price are required.",
+        variant: "destructive",
+      })
+      return
+    }
 
     try {
       setIsSubmitting(true)
@@ -186,60 +271,100 @@ export default function ProductsTab() {
       }
 
       console.log("Updating product with data:", {
-        product_id: currentProduct.id,
-        product_name: formData.name,
-        product_slug: slug,
-        product_description: formData.description,
-        product_price: Number(formData.price),
-        product_image_url: formData.image_url,
-        product_category_id: formData.category_id || null,
-        product_stock: formData.stock,
-        product_featured: formData.featured,
+        id: currentProduct.id,
+        name: formData.name,
+        slug,
+        description: formData.description,
+        price: Number(formData.price),
+        image_url: formData.image_url,
+        category_id: formData.category_id || null,
+        stock: formData.stock,
+        featured: formData.featured,
       })
 
-      // Use the RPC function to update the product
-      const { data, error } = await supabase.rpc("admin_update_product", {
-        product_id: currentProduct.id,
-        product_name: formData.name,
-        product_slug: slug,
-        product_description: formData.description,
-        product_price: Number(formData.price),
-        product_image_url: formData.image_url,
-        product_category_id: formData.category_id || null,
-        product_stock: formData.stock,
-        product_featured: formData.featured,
-      })
+      // Try direct update first
+      const { error: directError } = await supabase
+        .from("products")
+        .update({
+          name: formData.name,
+          slug: slug,
+          description: formData.description,
+          price: Number(formData.price),
+          image_url: formData.image_url,
+          category_id: formData.category_id || null,
+          stock: formData.stock,
+          featured: formData.featured,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", currentProduct.id)
 
-      if (error) {
-        console.error("RPC Error:", error)
-        throw error
+      if (!directError) {
+        console.log("Product updated directly")
+
+        // Refresh products list
+        await fetchProducts()
+
+        // Close dialog and reset
+        setIsEditDialogOpen(false)
+        setCurrentProduct(null)
+        resetForm()
+
+        toast({
+          title: "Success",
+          description: "Product updated successfully",
+          duration: 5000,
+        })
+        return
       }
 
-      console.log("Update result:", data)
+      // If direct update fails, try RPC
+      if (directError) {
+        console.warn("Direct update failed, trying RPC:", directError)
 
-      if (data === false) {
-        throw new Error("Failed to update product. No rows affected.")
+        const { data, error } = await supabase.rpc("admin_update_product", {
+          product_id: currentProduct.id,
+          product_name: formData.name,
+          product_slug: slug,
+          product_description: formData.description,
+          product_price: Number(formData.price),
+          product_image_url: formData.image_url,
+          product_category_id: formData.category_id || null,
+          product_stock: formData.stock,
+          product_featured: formData.featured,
+        })
+
+        if (error) {
+          console.error("RPC Error:", error)
+          throw error
+        }
+
+        console.log("Update result:", data)
+
+        if (data === false) {
+          throw new Error("Failed to update product. No rows affected.")
+        }
+
+        // Refresh products list
+        await fetchProducts()
+
+        // Close dialog and reset
+        setIsEditDialogOpen(false)
+        setCurrentProduct(null)
+        resetForm()
+
+        toast({
+          title: "Success",
+          description: "Product updated successfully via RPC",
+          duration: 5000,
+        })
       }
-
-      // Refresh products list
-      await fetchProducts()
-
-      setIsEditDialogOpen(false)
-      setCurrentProduct(null)
-      resetForm()
-
-      toast({
-        title: "Success",
-        description: "Product updated successfully",
-        duration: 5000, // 5 seconds
-      })
     } catch (error: any) {
       console.error("Error updating product:", error)
       toast({
         title: "Error",
         description: error.message || "Failed to update product. Please try again.",
         variant: "destructive",
-        duration: 7000, // 7 seconds for errors
+        duration: 7000,
       })
     } finally {
       setIsSubmitting(false)
@@ -255,40 +380,66 @@ export default function ProductsTab() {
 
       console.log("Deleting product with ID:", currentProduct.id)
 
-      // Use the RPC function to delete the product
-      const { data, error } = await supabase.rpc("admin_delete_product", {
-        product_id: currentProduct.id,
-      })
+      // Try direct delete first
+      const { error: directError } = await supabase.from("products").delete().eq("id", currentProduct.id)
 
-      if (error) {
-        console.error("RPC Error:", error)
-        throw error
+      if (!directError) {
+        console.log("Product deleted directly")
+
+        // Refresh products list
+        await fetchProducts()
+
+        // Close dialog and reset
+        setIsDeleteDialogOpen(false)
+        setCurrentProduct(null)
+
+        toast({
+          title: "Success",
+          description: "Product deleted successfully",
+          duration: 5000,
+        })
+        return
       }
 
-      console.log("Delete result:", data)
+      // If direct delete fails, try RPC
+      if (directError) {
+        console.warn("Direct delete failed, trying RPC:", directError)
 
-      if (data === false) {
-        throw new Error("Failed to delete product. No rows affected.")
+        const { data, error } = await supabase.rpc("admin_delete_product", {
+          product_id: currentProduct.id,
+        })
+
+        if (error) {
+          console.error("RPC Error:", error)
+          throw error
+        }
+
+        console.log("Delete result:", data)
+
+        if (data === false) {
+          throw new Error("Failed to delete product. No rows affected.")
+        }
+
+        // Refresh products list
+        await fetchProducts()
+
+        // Close dialog and reset
+        setIsDeleteDialogOpen(false)
+        setCurrentProduct(null)
+
+        toast({
+          title: "Success",
+          description: "Product deleted successfully via RPC",
+          duration: 5000,
+        })
       }
-
-      // Refresh products list
-      await fetchProducts()
-
-      setIsDeleteDialogOpen(false)
-      setCurrentProduct(null)
-
-      toast({
-        title: "Success",
-        description: "Product deleted successfully",
-        duration: 5000, // 5 seconds
-      })
     } catch (error: any) {
       console.error("Error deleting product:", error)
       toast({
         title: "Error",
         description: error.message || "Failed to delete product. Please try again.",
         variant: "destructive",
-        duration: 7000, // 7 seconds for errors
+        duration: 7000,
       })
     } finally {
       setIsSubmitting(false)
@@ -409,7 +560,13 @@ export default function ProductsTab() {
       )}
 
       {/* Add Product Dialog */}
-      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+      <Dialog
+        open={isAddDialogOpen}
+        onOpenChange={(open) => {
+          setIsAddDialogOpen(open)
+          if (!open) resetForm()
+        }}
+      >
         <DialogContent className="sm:max-w-[550px]">
           <DialogHeader>
             <DialogTitle>Add New Product</DialogTitle>
@@ -418,13 +575,20 @@ export default function ProductsTab() {
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="name" className="text-right">
-                Name
+                Name *
               </Label>
-              <Input id="name" name="name" value={formData.name} onChange={handleInputChange} className="col-span-3" />
+              <Input
+                id="name"
+                name="name"
+                value={formData.name}
+                onChange={handleInputChange}
+                className="col-span-3"
+                required
+              />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="price" className="text-right">
-                Price (₦)
+                Price (₦) *
               </Label>
               <Input
                 id="price"
@@ -433,19 +597,28 @@ export default function ProductsTab() {
                 value={formData.price}
                 onChange={handleInputChange}
                 className="col-span-3"
+                required
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="category_id" className="text-right">
-                Category ID
+                Category
               </Label>
-              <Input
+              <select
+                title="Category"
                 id="category_id"
                 name="category_id"
                 value={formData.category_id}
-                onChange={handleInputChange}
-                className="col-span-3"
-              />
+                onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
+                className="col-span-3 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <option value="">Select a category</option>
+                {categories.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="image_url" className="text-right">
@@ -457,6 +630,7 @@ export default function ProductsTab() {
                 value={formData.image_url}
                 onChange={handleInputChange}
                 className="col-span-3"
+                placeholder="https://example.com/image.jpg"
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
@@ -496,7 +670,14 @@ export default function ProductsTab() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsAddDialogOpen(false)} disabled={isSubmitting}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsAddDialogOpen(false)
+                resetForm()
+              }}
+              disabled={isSubmitting}
+            >
               Cancel
             </Button>
             <Button onClick={handleAddProduct} disabled={isSubmitting}>
@@ -513,7 +694,16 @@ export default function ProductsTab() {
       </Dialog>
 
       {/* Edit Product Dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+      <Dialog
+        open={isEditDialogOpen}
+        onOpenChange={(open) => {
+          setIsEditDialogOpen(open)
+          if (!open) {
+            setCurrentProduct(null)
+            resetForm()
+          }
+        }}
+      >
         <DialogContent className="sm:max-w-[550px]">
           <DialogHeader>
             <DialogTitle>Edit Product</DialogTitle>
@@ -522,7 +712,7 @@ export default function ProductsTab() {
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="edit-name" className="text-right">
-                Name
+                Name *
               </Label>
               <Input
                 id="edit-name"
@@ -530,11 +720,12 @@ export default function ProductsTab() {
                 value={formData.name}
                 onChange={handleInputChange}
                 className="col-span-3"
+                required
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="edit-price" className="text-right">
-                Price (₦)
+                Price (₦) *
               </Label>
               <Input
                 id="edit-price"
@@ -543,19 +734,28 @@ export default function ProductsTab() {
                 value={formData.price}
                 onChange={handleInputChange}
                 className="col-span-3"
+                required
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="edit-category_id" className="text-right">
-                Category ID
+                Category
               </Label>
-              <Input
+              <select
+                title="Category"
                 id="edit-category_id"
                 name="category_id"
                 value={formData.category_id}
-                onChange={handleInputChange}
-                className="col-span-3"
-              />
+                onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
+                className="col-span-3 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <option value="">Select a category</option>
+                {categories.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="edit-image_url" className="text-right">
@@ -567,6 +767,7 @@ export default function ProductsTab() {
                 value={formData.image_url}
                 onChange={handleInputChange}
                 className="col-span-3"
+                placeholder="https://example.com/image.jpg"
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
@@ -606,7 +807,15 @@ export default function ProductsTab() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)} disabled={isSubmitting}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsEditDialogOpen(false)
+                setCurrentProduct(null)
+                resetForm()
+              }}
+              disabled={isSubmitting}
+            >
               Cancel
             </Button>
             <Button onClick={handleEditProduct} disabled={isSubmitting}>
@@ -623,7 +832,13 @@ export default function ProductsTab() {
       </Dialog>
 
       {/* Delete Product Dialog */}
-      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+      <Dialog
+        open={isDeleteDialogOpen}
+        onOpenChange={(open) => {
+          setIsDeleteDialogOpen(open)
+          if (!open) setCurrentProduct(null)
+        }}
+      >
         <DialogContent className="sm:max-w-[450px]">
           <DialogHeader>
             <DialogTitle>Delete Product</DialogTitle>
@@ -633,10 +848,17 @@ export default function ProductsTab() {
           </DialogHeader>
           <div className="py-4">
             <p className="font-medium">{currentProduct?.name}</p>
-            <p className="text-sm text-muted-foreground mt-1">Price: ₦{currentProduct?.price.toLocaleString()}</p>
+            <p className="text-sm text-muted-foreground mt-1">Price: ₦{currentProduct?.price?.toLocaleString()}</p>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)} disabled={isSubmitting}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsDeleteDialogOpen(false)
+                setCurrentProduct(null)
+              }}
+              disabled={isSubmitting}
+            >
               Cancel
             </Button>
             <Button variant="destructive" onClick={handleDeleteProduct} disabled={isSubmitting}>

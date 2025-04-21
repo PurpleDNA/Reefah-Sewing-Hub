@@ -7,7 +7,7 @@ import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { ShoppingCart, Menu, User, Search, X, ShieldCheck, LogOut, Package } from "lucide-react"
+import { ShoppingCart, Menu, User, Search, X, ShieldCheck, LogOut, Package, Loader2 } from "lucide-react"
 import { useCart } from "@/hooks/use-cart"
 import { useAuth } from "@/hooks/use-auth"
 import { ThemeToggle } from "@/components/theme-toggle"
@@ -21,6 +21,7 @@ import {
 import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
 import Image from "next/image"
+import { toast } from "@/components/ui/use-toast"
 
 export default function Header() {
   const pathname = usePathname()
@@ -33,16 +34,19 @@ export default function Header() {
   const [searchQuery, setSearchQuery] = useState("")
   const [isAdmin, setIsAdmin] = useState(false)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
+  const [isAdminLoading, setIsAdminLoading] = useState(true)
 
   // Check if user is admin
   useEffect(() => {
     const checkAdminStatus = async () => {
       if (!user) {
         setIsAdmin(false)
+        setIsAdminLoading(false)
         return
       }
 
       try {
+        setIsAdminLoading(true)
         const supabase = createClient()
 
         // Try direct query first (most reliable)
@@ -53,7 +57,9 @@ export default function Header() {
           .single()
 
         if (!profileError && profileData) {
+          console.log("Admin check via direct query:", profileData.is_admin)
           setIsAdmin(!!profileData.is_admin)
+          setIsAdminLoading(false)
           return
         }
 
@@ -63,7 +69,9 @@ export default function Header() {
           const { data, error } = await supabase.rpc("check_if_admin", { user_id: user.id })
 
           if (!error) {
+            console.log("Admin check via RPC:", data)
             setIsAdmin(!!data)
+            setIsAdminLoading(false)
             return
           }
 
@@ -72,9 +80,11 @@ export default function Header() {
 
         // Default to false if all checks fail
         setIsAdmin(false)
+        setIsAdminLoading(false)
       } catch (error) {
         console.error("Failed to check admin status:", error)
         setIsAdmin(false)
+        setIsAdminLoading(false)
       }
     }
 
@@ -112,28 +122,34 @@ export default function Header() {
     try {
       setIsLoggingOut(true)
 
-      // Clear local storage
-      localStorage.removeItem("cart")
-
-      // Clear all auth-related items
-      Object.keys(localStorage).forEach((key) => {
-        if (key.startsWith("supabase.auth.") || key.includes("token")) {
-          localStorage.removeItem(key)
-        }
+      // Show toast to indicate logout is in progress
+      toast({
+        title: "Logging out",
+        description: "Please wait while we log you out...",
       })
 
-      // Get Supabase client
-      const supabase = createClient()
+      // Call the signOut function from auth context
+      await signOut()
 
-      // Sign out from Supabase
-      await supabase.auth.signOut()
-
-      // Force a hard refresh to clear all state
-      window.location.href = "/"
+      // The signOut function will redirect to home page
+      // But just in case, we'll set a timeout to force redirect
+      setTimeout(() => {
+        window.location.href = "/"
+      }, 3000)
     } catch (error) {
       console.error("Error signing out:", error)
-      // Even if there's an error, force a refresh
-      window.location.href = "/"
+      toast({
+        title: "Error",
+        description: "Failed to log out. Please try again.",
+        variant: "destructive",
+      })
+
+      // Even if there's an error, force a refresh after a delay
+      setTimeout(() => {
+        window.location.href = "/"
+      }, 2000)
+
+      setIsLoggingOut(false)
     }
   }
 
@@ -180,7 +196,12 @@ export default function Header() {
             <ThemeToggle />
 
             {/* Admin Button - Only visible for admin users */}
-            {isAdmin && (
+            {isAdminLoading ? (
+              <Button variant="outline" size="sm" disabled className="bg-gray-300">
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Checking...
+              </Button>
+            ) : isAdmin ? (
               <Button
                 variant="outline"
                 size="sm"
@@ -192,7 +213,7 @@ export default function Header() {
                   Admin
                 </Link>
               </Button>
-            )}
+            ) : null}
 
             {user ? (
               <DropdownMenu>
@@ -228,7 +249,10 @@ export default function Header() {
                     className="flex items-center text-red-600 focus:text-red-600"
                   >
                     {isLoggingOut ? (
-                      <>Logging out...</>
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Logging out...
+                      </>
                     ) : (
                       <>
                         <LogOut className="h-4 w-4 mr-2" />
@@ -259,7 +283,7 @@ export default function Header() {
           {/* Mobile Menu Button */}
           <div className="flex md:hidden items-center space-x-4">
             {/* Mobile Admin Button - Only visible for admin users */}
-            {isAdmin && (
+            {!isAdminLoading && isAdmin && (
               <Button
                 variant="outline"
                 size="sm"
@@ -345,7 +369,7 @@ export default function Header() {
               ))}
 
               {/* Admin Link in Mobile Menu - Only visible for admin users */}
-              {isAdmin && (
+              {!isAdminLoading && isAdmin && (
                 <Link
                   href="/admin"
                   className="px-4 py-2 text-sm font-medium bg-green-600 text-white rounded-md flex items-center gap-2"
@@ -378,8 +402,17 @@ export default function Header() {
                     onClick={handleSignOut}
                     disabled={isLoggingOut}
                   >
-                    <LogOut className="h-4 w-4 mr-2" />
-                    {isLoggingOut ? "Logging out..." : "Logout"}
+                    {isLoggingOut ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Logging out...
+                      </>
+                    ) : (
+                      <>
+                        <LogOut className="h-4 w-4 mr-2" />
+                        Logout
+                      </>
+                    )}
                   </button>
                 </>
               ) : (
