@@ -96,17 +96,17 @@ export function CartProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!isInitialized) return
 
-    // Always save to localStorage for quick access
-    try {
-      localStorage.setItem("cart", JSON.stringify(items))
-      console.log("Saved cart to localStorage:", items)
-    } catch (error) {
-      console.error("Failed to save cart to localStorage:", error)
-    }
+    // Use a ref to track if we're currently updating to prevent loops
+    const updateCart = async () => {
+      // Always save to localStorage for quick access
+      try {
+        localStorage.setItem("cart", JSON.stringify(items))
+      } catch (error) {
+        console.error("Failed to save cart to localStorage:", error)
+      }
 
-    // If user is logged in, also save to Supabase
-    if (user) {
-      const saveToSupabase = async () => {
+      // If user is logged in, also save to Supabase
+      if (user) {
         try {
           if (!supabaseRef.current) {
             supabaseRef.current = createClient()
@@ -119,46 +119,36 @@ export function CartProvider({ children }: { children: ReactNode }) {
             .eq("user_id", user.id)
             .maybeSingle()
 
-          console.log("Checking if cart exists:", { data, error, userId: user.id })
-
           if (data) {
             // Update existing cart
-            const { error: updateError } = await supabaseRef.current
+            await supabaseRef.current
               .from("carts")
               .update({
                 items,
                 updated_at: new Date().toISOString(),
               })
               .eq("user_id", user.id)
-
-            console.log("Updated cart in Supabase:", { updateError, items })
-
-            if (updateError) {
-              console.error("Failed to update cart in Supabase:", updateError)
-            }
-          } else {
+          } else if (!error) {
             // Create new cart
-            const { error: insertError } = await supabaseRef.current.from("carts").insert({
+            await supabaseRef.current.from("carts").insert({
               user_id: user.id,
               items,
             })
-
-            console.log("Created new cart in Supabase:", { insertError, items })
-
-            if (insertError) {
-              console.error("Failed to create cart in Supabase:", insertError)
-            }
           }
         } catch (error) {
           console.error("Failed to save cart to Supabase:", error)
         }
       }
-
-      // Only save to Supabase if the component is still mounted
-      if (isMountedRef.current) {
-        saveToSupabase()
-      }
     }
+
+    // Debounce the update to prevent rapid consecutive updates
+    const timeoutId = setTimeout(() => {
+      if (isMountedRef.current) {
+        updateCart()
+      }
+    }, 300)
+
+    return () => clearTimeout(timeoutId)
   }, [items, user, isInitialized])
 
   // Reset the mounted ref when the component unmounts

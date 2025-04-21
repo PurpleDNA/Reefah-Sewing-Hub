@@ -61,7 +61,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const setupAuthListener = async () => {
       if (!supabaseRef.current) return
       try {
-        const { data } = supabaseRef.current.auth.onAuthStateChange(async (_event, session) => {
+        const { data } = supabaseRef.current.auth.onAuthStateChange(async (_event:any, session:any) => {
           if (!isMounted) return
 
           const currentUser = session?.user ?? null
@@ -134,16 +134,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     try {
-      // Clear local storage cart
+      // Clear local storage cart and auth tokens
       localStorage.removeItem("cart")
+
+      // For Google Sign-In, we need to ensure all tokens are cleared
       localStorage.removeItem("supabase.auth.token")
 
-      // Sign out from Supabase
-      const { error } = await supabaseRef.current.auth.signOut()
+      // Get all localStorage keys and remove any that might be related to auth
+      Object.keys(localStorage).forEach((key) => {
+        if (key.startsWith("supabase.auth.") || key.includes("token")) {
+          localStorage.removeItem(key)
+        }
+      })
 
-      if (error) {
-        console.error("Error signing out:", error)
-        throw error
+      // Sign out from Supabase
+      if (supabaseRef.current) {
+        await supabaseRef.current.auth.signOut()
       }
 
       // Clear user state

@@ -45,30 +45,33 @@ export default function Header() {
       try {
         const supabase = createClient()
 
-        // Use the RPC function to check admin status
-        const { data, error } = await supabase.rpc("check_if_admin", { user_id: user.id })
+        // Try direct query first (most reliable)
+        const { data: profileData, error: profileError } = await supabase
+          .from("profiles")
+          .select("is_admin")
+          .eq("id", user.id)
+          .single()
 
-        if (error) {
-          console.error("Error checking admin status:", error)
-
-          // Fallback to direct query if RPC fails
-          const { data: profileData, error: profileError } = await supabase
-            .from("profiles")
-            .select("is_admin")
-            .eq("id", user.id)
-            .single()
-
-          if (profileError) {
-            console.error("Error with fallback admin check:", profileError)
-            setIsAdmin(false)
-            return
-          }
-
-          setIsAdmin(!!profileData?.is_admin)
+        if (!profileError && profileData) {
+          setIsAdmin(!!profileData.is_admin)
           return
         }
 
-        setIsAdmin(!!data)
+        // Fallback to RPC if direct query fails
+        if (profileError) {
+          console.warn("Direct query failed, trying RPC:", profileError)
+          const { data, error } = await supabase.rpc("check_if_admin", { user_id: user.id })
+
+          if (!error) {
+            setIsAdmin(!!data)
+            return
+          }
+
+          console.error("RPC check failed:", error)
+        }
+
+        // Default to false if all checks fail
+        setIsAdmin(false)
       } catch (error) {
         console.error("Failed to check admin status:", error)
         setIsAdmin(false)
@@ -112,6 +115,13 @@ export default function Header() {
       // Clear local storage
       localStorage.removeItem("cart")
 
+      // Clear all auth-related items
+      Object.keys(localStorage).forEach((key) => {
+        if (key.startsWith("supabase.auth.") || key.includes("token")) {
+          localStorage.removeItem(key)
+        }
+      })
+
       // Get Supabase client
       const supabase = createClient()
 
@@ -139,7 +149,9 @@ export default function Header() {
           {/* Logo */}
           <Link href="/" className="flex items-center">
             <span className="text-2xl font-bold text-green-600 dark:text-green-400">
-              <Image src="/favicon1.png" alt="betza" width={7} height={7} className="inline-block w-7 h-10"/><span>etza</span><span className="text-orange-500">Store</span>
+              <Image src="/favicon1.png" alt="betza" width={7} height={7} className="inline-block w-7 h-10" />
+              <span>etza</span>
+              <span className="text-orange-500">Store</span>
             </span>
           </Link>
 
