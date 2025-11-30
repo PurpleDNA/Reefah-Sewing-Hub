@@ -45,45 +45,21 @@ export default function Header() {
         return
       }
 
+      setIsAdminLoading(true)
       try {
-        setIsAdminLoading(true)
         const supabase = createClient()
+        const { data, error } = await supabase.rpc("check_if_admin")
 
-        // Try direct query first (most reliable)
-        const { data: profileData, error: profileError } = await supabase
-          .from("profiles")
-          .select("is_admin")
-          .eq("id", user.id)
-          .single()
-
-        if (!profileError && profileData) {
-          console.log("Admin check via direct query:", profileData.is_admin)
-          setIsAdmin(!!profileData.is_admin)
-          setIsAdminLoading(false)
-          return
+        if (error) {
+          console.error("Error checking admin status:", error)
+          setIsAdmin(false)
+        } else {
+          setIsAdmin(data)
         }
-
-        // Fallback to RPC if direct query fails
-        if (profileError) {
-          console.warn("Direct query failed, trying RPC:", profileError)
-          const { data, error } = await supabase.rpc("check_if_admin", { user_id: user.id })
-
-          if (!error) {
-            console.log("Admin check via RPC:", data)
-            setIsAdmin(!!data)
-            setIsAdminLoading(false)
-            return
-          }
-
-          console.error("RPC check failed:", error)
-        }
-
-        // Default to false if all checks fail
-        setIsAdmin(false)
-        setIsAdminLoading(false)
       } catch (error) {
-        console.error("Failed to check admin status:", error)
+        console.error("An unexpected error occurred:", error)
         setIsAdmin(false)
+      } finally {
         setIsAdminLoading(false)
       }
     }

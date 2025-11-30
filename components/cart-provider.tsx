@@ -72,7 +72,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
             console.log("Fetching cart from Supabase for user:", user.id)
             const { data, error } = await supabaseRef.current
-              .from("carts")
+              .from("user_carts")
               .select("*")
               .eq("user_id", user.id)
               .maybeSingle()
@@ -145,7 +145,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
           console.log("Checking if cart exists for user:", user.id)
           // First check if cart exists
           const { data, error } = await supabaseRef.current
-            .from("carts")
+            .from("user_carts")
             .select("id")
             .eq("user_id", user.id)
             .maybeSingle()
@@ -154,7 +154,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
             // Update existing cart
             console.log("Updating existing cart for user:", user.id)
             const { error: updateError } = await supabaseRef.current
-              .from("carts")
+              .from("user_carts")
               .update({
                 items,
                 updated_at: new Date().toISOString(),
@@ -169,7 +169,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
           } else if (!error) {
             // Create new cart
             console.log("Creating new cart for user:", user.id)
-            const { error: insertError } = await supabaseRef.current.from("carts").insert({
+            const { error: insertError } = await supabaseRef.current.from("user_carts").insert({
               user_id: user.id,
               items,
             })
@@ -266,7 +266,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
           supabaseRef.current = createClient()
         }
 
-        await supabaseRef.current.from("carts").update({ items: [] }).eq("user_id", user.id)
+        await supabaseRef.current.from("user_carts").update({ items: [] }).eq("user_id", user.id)
       } catch (error) {
         console.error("Failed to clear cart in Supabase:", error)
       }
