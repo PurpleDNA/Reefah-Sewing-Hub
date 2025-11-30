@@ -28,7 +28,7 @@ export default function AdminPage() {
       }
 
       try {
-        const supabase = createClient()
+        const supabase = await createClient()
 
         // Try to use the RPC function first
         try {

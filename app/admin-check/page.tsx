@@ -24,7 +24,7 @@ export default function AdminCheckPage() {
         // Also try direct Supabase query
         let supabaseData = null
         if (user) {
-          const supabase = createClient()
+          const supabase = await createClient()
           const { data, error } = await supabase.from("profiles").select("*").eq("id", user.id).single()
 
           if (!error) {
@@ -55,7 +55,7 @@ export default function AdminCheckPage() {
     if (!user) return
 
     try {
-      const supabase = createClient()
+      const supabase = await createClient()
       await supabase.from("profiles").update({ is_admin: true }).eq("id", user.id)
 
       // Refresh the data

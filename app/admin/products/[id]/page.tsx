@@ -4,7 +4,7 @@ import { ProductForm } from "@/components/admin/product-form"
 import type { Product, Category } from "@/types"
 
 export default async function EditProduct({ params }: { params: { id: string } }) {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   // Fetch product data
   const { data: product } = await supabase.from("products").select("*").eq("id", params.id).single()

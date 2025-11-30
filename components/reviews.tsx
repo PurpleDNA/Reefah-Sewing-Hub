@@ -39,7 +39,7 @@ export function Reviews({ productId, reviews: initialReviews }: ReviewsProps) {
     setIsSubmitting(true)
 
     try {
-      const supabase = createClient()
+      const supabase = await createClient()
 
       const { data, error } = await supabase
         .from("reviews")

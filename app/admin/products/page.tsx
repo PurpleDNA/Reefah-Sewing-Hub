@@ -9,7 +9,7 @@ import Image from "next/image"
 import { Plus, Search } from "lucide-react"
 
 export default async function AdminProducts({ searchParams }: { searchParams: { query?: string } }) {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   // Build query
   let query = supabase.from("products").select("*, categories(name)").order("name")

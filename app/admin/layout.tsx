@@ -5,7 +5,7 @@ import AdminSidebar from "@/components/admin/sidebar"
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   try {
-    const supabase = createClient()
+    const supabase = await createClient()
 
     // Check if user is authenticated
     const {

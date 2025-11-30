@@ -9,7 +9,7 @@ import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
 
 export default async function OrderDetails({ params }: { params: { id: string } }) {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   // Fetch order data
   const { data: order } = await supabase

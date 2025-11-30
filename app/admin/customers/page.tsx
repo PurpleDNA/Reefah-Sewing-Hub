@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge"
 import { formatDistanceToNow } from "date-fns"
 
 export default async function CustomersPage() {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   // Fetch users with profiles
   const { data: users, error } = await supabase

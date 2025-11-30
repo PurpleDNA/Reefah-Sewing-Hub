@@ -63,7 +63,7 @@ export default function ProductsTab() {
 
   const fetchCategories = async () => {
     try {
-      const supabase = createClient()
+      const supabase = await createClient()
       const { data, error } = await supabase.from("categories").select("id, name").order("name", { ascending: true })
 
       if (error) throw error
@@ -77,7 +77,7 @@ export default function ProductsTab() {
   const fetchProducts = async () => {
     try {
       setLoading(true)
-      const supabase = createClient()
+      const supabase = await createClient()
       const { data, error } = await supabase
         .from("products")
         .select("*, categories(name)")
@@ -146,7 +146,7 @@ export default function ProductsTab() {
 
     try {
       setIsSubmitting(true)
-      const supabase = createClient()
+      const supabase = await createClient()
 
       // Generate a slug from the name
       const slug = generateSlug(formData.name)
@@ -262,7 +262,7 @@ export default function ProductsTab() {
 
     try {
       setIsSubmitting(true)
-      const supabase = createClient()
+      const supabase = await createClient()
 
       // Generate a slug from the name if name changed
       let slug = currentProduct.slug || generateSlug(currentProduct.name)
@@ -376,7 +376,7 @@ export default function ProductsTab() {
 
     try {
       setIsSubmitting(true)
-      const supabase = createClient()
+      const supabase = await createClient()
 
       console.log("Deleting product with ID:", currentProduct.id)
 

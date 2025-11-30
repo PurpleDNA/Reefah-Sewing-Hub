@@ -4,7 +4,7 @@ import { CategoryGrid } from "@/components/category-grid"
 import { createClient } from "@/lib/supabase/server"
 
 export default async function Home() {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   // Fetch featured products
   const { data: featuredProducts } = await supabase

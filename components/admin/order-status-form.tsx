@@ -26,7 +26,7 @@ export function OrderStatusForm({ orderId, currentStatus }: OrderStatusFormProps
     setIsSubmitting(true)
 
     try {
-      const supabase = createClient()
+      const supabase = await createClient()
 
       const { error } = await supabase.from("orders").update({ status }).eq("id", orderId)
 

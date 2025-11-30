@@ -3,7 +3,7 @@ import { ProductForm } from "@/components/admin/product-form"
 import type { Category } from "@/types"
 
 export default async function NewProduct() {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   // Fetch categories for the form
   const { data: categories } = await supabase.from("categories").select("*").order("name")

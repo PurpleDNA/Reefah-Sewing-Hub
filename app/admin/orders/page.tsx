@@ -9,7 +9,7 @@ import { Search } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 export default async function AdminOrders({ searchParams }: { searchParams: { status?: string; query?: string } }) {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   // Build query
   let query = supabase

@@ -61,7 +61,7 @@ export default function OrdersTab() {
   const fetchOrders = async () => {
     try {
       setLoading(true)
-      const supabase = createClient()
+      const supabase = await createClient()
 
       const { data, error } = await supabase.from("orders").select("*").order("created_at", { ascending: false })
 
@@ -97,7 +97,7 @@ export default function OrdersTab() {
 
   const updateOrderStatus = async (orderId: string, status: string) => {
     try {
-      const supabase = createClient()
+      const supabase = await createClient()
 
       const { error } = await supabase.from("orders").update({ status }).eq("id", orderId)
 

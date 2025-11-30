@@ -37,7 +37,7 @@ export default function RegisterPage() {
     setIsLoading(true)
 
     try {
-      const supabase = createClient()
+      const supabase = await createClient()
 
       // Create user account
       const { data, error } = await supabase.auth.signUp({
@@ -80,7 +80,7 @@ export default function RegisterPage() {
 
   const handleGoogleSignIn = async () => {
     try {
-      const supabase = createClient()
+      const supabase = await createClient()
 
       await supabase.auth.signInWithOAuth({
         provider: "google",

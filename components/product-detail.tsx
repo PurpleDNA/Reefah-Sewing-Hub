@@ -44,7 +44,7 @@ export function ProductDetail({ product }: ProductDetailProps) {
 
       // If user is logged in, update cart in backend first
       if (user) {
-        const supabase = createClient()
+        const supabase = await createClient()
 
         // Check if cart exists
         const { data: existingCart } = await supabase.from("carts").select("items").eq("user_id", user.id).maybeSingle()

@@ -69,7 +69,7 @@ export function ProductForm({ product, categories }: ProductFormProps) {
     setIsSubmitting(true)
 
     try {
-      const supabase = createClient()
+      const supabase = await createClient()
 
       if (!formData.slug) {
         generateSlug()

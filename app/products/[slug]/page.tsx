@@ -8,7 +8,7 @@ export default async function ProductPage({
 }: {
   params: { slug: string }
 }) {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   // Fetch product details
   const { data: product } = await supabase

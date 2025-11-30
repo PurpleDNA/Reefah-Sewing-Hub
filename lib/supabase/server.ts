@@ -1,12 +1,14 @@
-import { createServerClient } from "@supabase/ssr"
+import { createServerClient, type CookieOptions } from "@supabase/ssr"
 import { cookies } from "next/headers"
 
-export function createClient() {
-  const cookieStore = cookies()
+export async function createClient() {
+  const cookieStore = await cookies()
 
-  // Check if the environment variables are defined
+  // Check environment variables
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY
+  const supabaseAnonKey =
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+    process.env.SUPABASE_ANON_KEY
 
   if (!supabaseUrl || !supabaseAnonKey) {
     console.error("Supabase URL or Anon Key is missing")
@@ -16,16 +18,24 @@ export function createClient() {
   try {
     return createServerClient(supabaseUrl, supabaseAnonKey, {
       cookies: {
-        get(name) {
+        get(name: string) {
           return cookieStore.get(name)?.value
         },
-        set(name, value, options) {
-          cookieStore.set({ name, value, ...options })
+        set(name: string, value: string, options: CookieOptions) {
+          try {
+            cookieStore.set({ name, value, ...options })
+          } catch (_) {
+            // Ignore: setting cookies from a Server Component is not allowed
+          }
         },
-        remove(name, options) {
-          cookieStore.set({ name, value: "", ...options })
-        },
-      },
+        remove(name: string, options: CookieOptions) {
+          try {
+            cookieStore.set({ name, value: "", ...options })
+          } catch (_) {
+            // Ignore: removing cookies from a Server Component is not allowed
+          }
+        }
+      }
     })
   } catch (error) {
     console.error("Error creating Supabase client:", error)

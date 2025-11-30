@@ -24,7 +24,7 @@ export default function OrdersPage() {
       }
 
       try {
-        const supabase = createClient()
+        const supabase = await createClient()
 
         // Simple query to get orders without joins
         const { data, error } = await supabase

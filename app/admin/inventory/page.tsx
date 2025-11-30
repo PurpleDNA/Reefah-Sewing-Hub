@@ -6,8 +6,19 @@ import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import Image from "next/image"
 
+interface Product {
+  id: string;
+  name: string;
+  description: string | null;
+  price: number;
+  image_url: string | null;
+  category_id: string | null;
+  stock: number;
+  categories: { name: string } | null;
+}
+
 export default async function InventoryPage() {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   // Get out of stock products
   const { data: outOfStockProducts } = await supabase
@@ -47,7 +58,7 @@ export default async function InventoryPage() {
               </TableHeader>
               <TableBody>
                 {outOfStockProducts && outOfStockProducts.length > 0 ? (
-                  outOfStockProducts.map((product) => (
+                  outOfStockProducts.map((product: Product) => (
                     <TableRow key={product.id}>
                       <TableCell>
                         <div className="relative h-10 w-10">
@@ -104,7 +115,7 @@ export default async function InventoryPage() {
               </TableHeader>
               <TableBody>
                 {lowStockProducts && lowStockProducts.length > 0 ? (
-                  lowStockProducts.map((product) => (
+                  lowStockProducts.map((product: Product) => (
                     <TableRow key={product.id}>
                       <TableCell>
                         <div className="relative h-10 w-10">

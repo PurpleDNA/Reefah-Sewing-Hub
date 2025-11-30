@@ -21,6 +21,7 @@ import {
 import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
 import Image from "next/image"
+import { Skeleton } from "@/components/ui/skeleton"
 import { toast } from "@/components/ui/use-toast"
 
 export default function Header() {
@@ -34,7 +35,12 @@ export default function Header() {
   const [searchQuery, setSearchQuery] = useState("")
   const [isAdmin, setIsAdmin] = useState(false)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
+  const [isClient, setIsClient] = useState(false)
   const [isAdminLoading, setIsAdminLoading] = useState(true)
+
+  useEffect(() => {
+    setIsClient(true)
+  }, [])
 
   // Check if user is admin
   useEffect(() => {
@@ -47,8 +53,8 @@ export default function Header() {
 
       setIsAdminLoading(true)
       try {
-        const supabase = createClient()
-        const { data, error } = await supabase.rpc("check_if_admin")
+        const supabase = await createClient()
+        const { data, error } = await supabase.rpc("check_if_admin", { user_id: user.id })
 
         if (error) {
           console.error("Error checking admin status:", error)
@@ -191,57 +197,61 @@ export default function Header() {
               </Button>
             ) : null}
 
-            {user ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" aria-label="User menu">
-                    <User className="h-5 w-5" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem disabled>{user.email}</DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <Link href="/profile">My Profile</Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/orders">
-                      <Package className="h-4 w-4 mr-2" />
-                      My Orders
-                    </Link>
-                  </DropdownMenuItem>
-                  {isAdmin && (
-                    <>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem asChild>
-                        <Link href="/admin">Admin Dashboard</Link>
-                      </DropdownMenuItem>
-                    </>
-                  )}
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onClick={handleSignOut}
-                    disabled={isLoggingOut}
-                    className="flex items-center text-red-600 focus:text-red-600"
-                  >
-                    {isLoggingOut ? (
+            {isClient ? (
+              user ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" aria-label="User menu">
+                      <User className="h-5 w-5" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem disabled>{user.email}</DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild>
+                      <Link href="/profile">My Profile</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/orders">
+                        <Package className="h-4 w-4 mr-2" />
+                        My Orders
+                      </Link>
+                    </DropdownMenuItem>
+                    {isAdmin && (
                       <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Logging out...
-                      </>
-                    ) : (
-                      <>
-                        <LogOut className="h-4 w-4 mr-2" />
-                        Logout
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem asChild>
+                          <Link href="/admin">Admin Dashboard</Link>
+                        </DropdownMenuItem>
                       </>
                     )}
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={handleSignOut}
+                      disabled={isLoggingOut}
+                      className="flex items-center text-red-600 focus:text-red-600"
+                    >
+                      {isLoggingOut ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Logging out...
+                        </>
+                      ) : (
+                        <>
+                          <LogOut className="h-4 w-4 mr-2" />
+                          Logout
+                        </>
+                      )}
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : (
+                <Button variant="ghost" asChild>
+                  <Link href="/auth/login">Login</Link>
+                </Button>
+              )
             ) : (
-              <Button variant="ghost" asChild>
-                <Link href="/auth/login">Login</Link>
-              </Button>
+              <Skeleton className="h-10 w-24" />
             )}
 
             <Button variant="outline" size="icon" asChild className="relative">
@@ -356,49 +366,56 @@ export default function Header() {
                 </Link>
               )}
 
-              {user ? (
-                <>
+              {isClient ? (
+                user ? (
+                  <>
+                    <Link
+                      href="/profile"
+                      className="px-4 py-2 text-sm font-medium transition-colors hover:bg-muted"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      My Profile
+                    </Link>
+                    <Link
+                      href="/orders"
+                      className="px-4 py-2 text-sm font-medium transition-colors hover:bg-muted flex items-center"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      <Package className="h-4 w-4 mr-2" />
+                      My Orders
+                    </Link>
+                    <button
+                      className="px-4 py-2 text-sm font-medium text-left text-red-600 transition-colors hover:bg-muted w-full flex items-center"
+                      onClick={handleSignOut}
+                      disabled={isLoggingOut}
+                    >
+                      {isLoggingOut ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Logging out...
+                        </>
+                      ) : (
+                        <>
+                          <LogOut className="h-4 w-4 mr-2" />
+                          Logout
+                        </>
+                      )}
+                    </button>
+                  </>
+                ) : (
                   <Link
-                    href="/profile"
+                    href="/auth/login"
                     className="px-4 py-2 text-sm font-medium transition-colors hover:bg-muted"
                     onClick={() => setIsMenuOpen(false)}
                   >
-                    My Profile
+                    Login / Register
                   </Link>
-                  <Link
-                    href="/orders"
-                    className="px-4 py-2 text-sm font-medium transition-colors hover:bg-muted flex items-center"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    <Package className="h-4 w-4 mr-2" />
-                    My Orders
-                  </Link>
-                  <button
-                    className="px-4 py-2 text-sm font-medium text-left text-red-600 transition-colors hover:bg-muted w-full flex items-center"
-                    onClick={handleSignOut}
-                    disabled={isLoggingOut}
-                  >
-                    {isLoggingOut ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Logging out...
-                      </>
-                    ) : (
-                      <>
-                        <LogOut className="h-4 w-4 mr-2" />
-                        Logout
-                      </>
-                    )}
-                  </button>
-                </>
+                )
               ) : (
-                <Link
-                  href="/auth/login"
-                  className="px-4 py-2 text-sm font-medium transition-colors hover:bg-muted"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Login / Register
-                </Link>
+                <div className="space-y-4 px-4">
+                  <Skeleton className="h-8 w-full" />
+                  <Skeleton className="h-8 w-full" />
+                </div>
               )}
             </nav>
           </div>

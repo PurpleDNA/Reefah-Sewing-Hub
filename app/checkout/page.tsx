@@ -38,7 +38,7 @@ export default function CheckoutPage() {
     const loadUserAddress = async () => {
       if (user) {
         try {
-          const supabase = createClient()
+          const supabase = await createClient()
           const { data, error } = await supabase
             .from("profiles")
             .select("full_name, phone, address, city, state, postal_code")
@@ -90,7 +90,7 @@ export default function CheckoutPage() {
     setIsSubmitting(true)
 
     try {
-      const supabase = createClient()
+      const supabase = await createClient()
 
       // Save address to user profile if logged in
       if (user) {

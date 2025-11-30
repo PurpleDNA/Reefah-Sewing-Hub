@@ -38,7 +38,7 @@ export default function UsersTab() {
   const fetchUsers = async () => {
     try {
       setLoading(true)
-      const supabase = createClient()
+      const supabase = await createClient()
 
       const { data, error } = await supabase
         .from("profiles")
@@ -62,7 +62,7 @@ export default function UsersTab() {
 
   const toggleAdminStatus = async (userId: string, isAdmin: boolean) => {
     try {
-      const supabase = createClient()
+      const supabase = await createClient()
 
       const { error } = await supabase.from("profiles").update({ is_admin: isAdmin }).eq("id", userId)
 

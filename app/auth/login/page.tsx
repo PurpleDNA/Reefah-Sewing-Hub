@@ -55,7 +55,7 @@ export default function AuthPage() {
     setIsLoading(true)
 
     try {
-      const supabase = createClient()
+      const supabase = await createClient()
 
       console.log("Attempting login with:", loginData.email)
 
@@ -116,7 +116,7 @@ export default function AuthPage() {
     setIsLoading(true)
 
     try {
-      const supabase = createClient()
+      const supabase = await createClient()
 
       console.log("Attempting registration with:", registerData.email)
 
@@ -166,7 +166,7 @@ export default function AuthPage() {
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true)
     try {
-      const supabase = createClient()
+      const supabase = await createClient()
 
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
@@ -191,7 +191,7 @@ export default function AuthPage() {
 
   const resendVerificationEmail = async () => {
     try {
-      const supabase = createClient()
+      const supabase = await createClient()
       const { error } = await supabase.auth.resend({
         type: "signup",
         email: loginData.email || registerData.email,
