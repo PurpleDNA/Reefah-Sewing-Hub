@@ -80,37 +80,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const currentUser = currentSession?.user ?? null
           setUser(currentUser)
 
-          // If user just signed in, check if they have a profile
+          // If user just signed in, check if they have a profile.
+          // IMPORTANT: never `await` other Supabase calls directly inside this
+          // callback — it runs while the auth lock is held, and any Supabase
+          // query needs the session (same lock) => deadlock that hangs
+          // signInWithPassword forever. Defer the work with setTimeout(0).
           if (currentUser && (event === "SIGNED_IN" || event === "USER_UPDATED")) {
-            try {
-              // First check if profile exists
-              const { data, error } = await supabaseRef.current
-                .from("profiles")
-                .select("*")
-                .eq("id", currentUser.id)
-                .single()
+            setTimeout(async () => {
+              try {
+                // First check if profile exists
+                const { data, error } = await supabaseRef.current
+                  .from("profiles")
+                  .select("*")
+                  .eq("id", currentUser.id)
+                  .single()
 
-              // If no profile exists or there was an error, create one
-              if (!data || error) {
-                console.log("Creating profile for user:", currentUser.id)
+                // If no profile exists or there was an error, create one
+                if (!data || error) {
+                  console.log("Creating profile for user:", currentUser.id)
 
-                // Get user metadata - handle both email/password and OAuth providers
-                const fullName =
-                  currentUser.user_metadata.full_name ||
-                  currentUser.user_metadata.name ||
-                  currentUser.user_metadata.preferred_username ||
-                  ""
+                  // Get user metadata - handle both email/password and OAuth providers
+                  const fullName =
+                    currentUser.user_metadata.full_name ||
+                    currentUser.user_metadata.name ||
+                    currentUser.user_metadata.preferred_username ||
+                    ""
 
-                await supabaseRef.current.from("profiles").insert({
-                  id: currentUser.id,
-                  full_name: fullName,
-                  email: currentUser.email,
-                  // Don't set is_admin here - that should be done manually
-                })
+                  await supabaseRef.current.from("profiles").insert({
+                    id: currentUser.id,
+                    full_name: fullName,
+                    email: currentUser.email,
+                    // Don't set is_admin here - that should be done manually
+                  })
+                }
+              } catch (error) {
+                console.error("Error checking/creating profile:", error)
               }
-            } catch (error) {
-              console.error("Error checking/creating profile:", error)
-            }
+            }, 0)
           }
 
           // Only refresh the router if the component is still mounted
