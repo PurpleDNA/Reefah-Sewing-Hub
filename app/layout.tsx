@@ -14,8 +14,8 @@ import { Suspense } from "react"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Betza Store - Your Neighborhood Grocery Store",
-  description: "Fresh groceries delivered to your doorstep",
+  title: "REEFA SEWING HUB - Your One-Stop Sewing Shop",
+  description: "Fabrics, tailoring, and everything you need to sew and create",
   generator: "v0.dev",
 }
 

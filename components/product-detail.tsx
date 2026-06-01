@@ -137,9 +137,9 @@ export function ProductDetail({ product }: ProductDetailProps) {
         </div>
 
         <div className="mb-6">
-          <p className="text-2xl font-bold text-green-600">₦{product.price.toFixed(2)}</p>
+          <p className="text-2xl font-bold text-green-600">GH₵{product.price.toFixed(2)}</p>
           {product.sale_price && (
-            <p className="text-sm text-muted-foreground line-through">₦{product.sale_price.toFixed(2)}</p>
+            <p className="text-sm text-muted-foreground line-through">GH₵{product.sale_price.toFixed(2)}</p>
           )}
         </div>
 

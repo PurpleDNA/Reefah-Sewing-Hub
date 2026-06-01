@@ -4,14 +4,15 @@ import Image from "next/image"
 export default function AboutPage() {
   return (
     <div className="container mx-auto px-4 py-12">
-      <h1 className="text-4xl font-bold text-center mb-8">About Betza Store</h1>
+      <h1 className="text-4xl font-bold text-center mb-8">About REEFA SEWING HUB</h1>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center mb-16">
         <div>
           <h2 className="text-2xl font-semibold mb-4">Our Story</h2>
           <p className="text-lg mb-4">
-            Betza Store started as a small neighborhood grocery in Lagos, Nigeria. Founded in 2020, we began with a
-            simple mission: to provide fresh, quality groceries to our local community at affordable prices.
+            REEFA SEWING HUB started as a small sewing shop in Ghana. Founded in 2020, we began with a
+            simple mission: to be a one-stop shop for quality fabrics, tailoring, and sewing supplies at affordable
+            prices.
           </p>
           <p className="text-lg mb-4">
             What started as a small family business has grown into a trusted name in our community. We pride ourselves
@@ -19,11 +20,11 @@ export default function AboutPage() {
           </p>
           <p className="text-lg">
             Today, we're expanding our reach through our online platform, bringing the same personalized service and
-            quality products to more customers across Nigeria.
+            quality products to more customers across Ghana.
           </p>
         </div>
         <div className="relative h-[400px] rounded-lg overflow-hidden">
-          <Image src="/placeholder.svg?height=400&width=600" alt="Betza Store" fill className="object-cover" />
+          <Image src="/placeholder.svg?height=400&width=600" alt="REEFA SEWING HUB" fill className="object-cover" />
         </div>
       </div>
 
@@ -34,7 +35,7 @@ export default function AboutPage() {
             <h3 className="text-xl font-medium mb-2">Quality</h3>
             <p>
               We carefully select our products to ensure we offer only the best quality items to our customers. From
-              fresh produce to household essentials, quality is our priority.
+              premium fabrics to sewing essentials, quality is our priority.
             </p>
           </CardContent>
         </Card>
@@ -53,8 +54,8 @@ export default function AboutPage() {
           <CardContent className="pt-6">
             <h3 className="text-xl font-medium mb-2">Affordability</h3>
             <p>
-              We strive to make quality groceries accessible to everyone by offering competitive prices and regular
-              promotions on essential items.
+              We strive to make quality fabrics and sewing supplies accessible to everyone by offering competitive
+              prices and regular promotions on essential items.
             </p>
           </CardContent>
         </Card>
@@ -63,7 +64,7 @@ export default function AboutPage() {
       <div className="bg-green-50 dark:bg-green-950 p-8 rounded-lg">
         <h2 className="text-2xl font-semibold text-center mb-6">Our Promise</h2>
         <p className="text-lg text-center max-w-3xl mx-auto">
-          At Betza Store, we promise to continue providing quality products, excellent customer service, and a shopping
+          At REEFA SEWING HUB, we promise to continue providing quality products, excellent customer service, and a shopping
           experience that makes you feel like family. We're committed to growing with our community and adapting to meet
           your needs.
         </p>

@@ -96,7 +96,7 @@ export default async function AdminOrders({ searchParams }: { searchParams: { st
                       </div>
                     </TableCell>
                     <TableCell>{new Date(order.created_at).toLocaleDateString()}</TableCell>
-                    <TableCell>₦{order.total.toLocaleString()}</TableCell>
+                    <TableCell>GH₵{order.total.toLocaleString()}</TableCell>
                     <TableCell>
                       <Badge
                         variant="outline"

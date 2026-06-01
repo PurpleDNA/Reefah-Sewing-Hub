@@ -7,9 +7,9 @@ export default function Footer() {
       <div className="container mx-auto px-4 py-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div>
-            <h3 className="text-lg font-bold mb-4">BetzaStore</h3>
+            <h3 className="text-lg font-bold mb-4">REEFA SEWING HUB</h3>
             <p className="text-green-100 mb-4">
-              Your neighborhood grocery store with fresh produce and everyday essentials.
+              Your one-stop sewing shop for fabrics, tailoring, and everything you need to create.
             </p>
             <div className="flex space-x-4">
               <a href="#" className="text-white hover:text-green-300">
@@ -74,15 +74,14 @@ export default function Footer() {
           <div>
             <h3 className="text-lg font-bold mb-4">Contact Us</h3>
             <address className="not-italic text-green-100">
-              <p>123 Adeola Odeku Street</p>
-              <p>Victoria Island, Lagos</p>
-              <p className="mt-2">Phone: +234 803 123 4567</p>
-              <p>Email: contact@betzastore.com</p>
+              <p>Address: TBD</p>
+              <p className="mt-2">Phone: +233 24 657 0570</p>
+              <p>Email: contact@reefasewinghub.com</p>
             </address>
           </div>
         </div>
         <div className="border-t border-green-800 mt-8 pt-8 text-center text-green-100">
-          <p>&copy; {new Date().getFullYear()} BetzaStore. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} REEFA SEWING HUB. All rights reserved.</p>
         </div>
       </div>
     </footer>

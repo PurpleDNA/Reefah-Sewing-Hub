@@ -72,7 +72,7 @@ export default async function InventoryPage() {
                       </TableCell>
                       <TableCell className="font-medium">{product.name}</TableCell>
                       <TableCell>{product.categories?.name}</TableCell>
-                      <TableCell>₦{product.price.toLocaleString()}</TableCell>
+                      <TableCell>GH₵{product.price.toLocaleString()}</TableCell>
                       <TableCell>
                         <Badge variant="outline" className="bg-red-50 text-red-700 hover:bg-red-100">
                           Out of Stock
@@ -129,7 +129,7 @@ export default async function InventoryPage() {
                       </TableCell>
                       <TableCell className="font-medium">{product.name}</TableCell>
                       <TableCell>{product.categories?.name}</TableCell>
-                      <TableCell>₦{product.price.toLocaleString()}</TableCell>
+                      <TableCell>GH₵{product.price.toLocaleString()}</TableCell>
                       <TableCell>
                         <Badge variant="outline" className="bg-amber-50 text-amber-700 hover:bg-amber-100">
                           {product.stock} left

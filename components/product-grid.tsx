@@ -72,7 +72,7 @@ export function ProductGrid({ products }: ProductGridProps) {
                 <p className="text-sm text-muted-foreground">{product.categories?.name}</p>
               </div>
               <Badge variant="outline" className="bg-green-50 text-green-700 hover:bg-green-100">
-                ₦{product.price.toLocaleString()}
+                GH₵{product.price.toLocaleString()}
               </Badge>
             </div>
           </CardContent>

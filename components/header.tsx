@@ -20,7 +20,6 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
-import Image from "next/image"
 import { Skeleton } from "@/components/ui/skeleton"
 import { toast } from "@/components/ui/use-toast"
 
@@ -147,9 +146,7 @@ export default function Header() {
           {/* Logo */}
           <Link href="/" className="flex items-center">
             <span className="text-2xl font-bold text-green-600 dark:text-green-400">
-              <Image src="/favicon1.png" alt="betza" width={7} height={7} className="inline-block w-7 h-10" />
-              <span>etza</span>
-              <span className="text-orange-500">Store</span>
+              REEFA <span className="text-orange-500">SEWING HUB</span>
             </span>
           </Link>
 

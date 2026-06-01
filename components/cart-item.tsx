@@ -50,7 +50,7 @@ export function CartItem({ item }: CartItemProps) {
           <Link href={`/products/${item.id}`} className="font-medium hover:text-green-600 transition-colors">
             {item.name}
           </Link>
-          <p className="text-sm text-muted-foreground mt-1">₦{item.price.toFixed(2)}</p>
+          <p className="text-sm text-muted-foreground mt-1">GH₵{item.price.toFixed(2)}</p>
         </div>
         <div className="flex items-center space-x-4">
           <div className="flex items-center">
@@ -69,7 +69,7 @@ export function CartItem({ item }: CartItemProps) {
             </Button>
           </div>
           <div className="text-right">
-            <p className="font-medium">₦{(item.price * item.quantity).toFixed(2)}</p>
+            <p className="font-medium">GH₵{(item.price * item.quantity).toFixed(2)}</p>
             <Button
               variant="ghost"
               size="sm"

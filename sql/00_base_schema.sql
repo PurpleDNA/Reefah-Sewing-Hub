@@ -1,6 +1,6 @@
 -- ============================================================================
 -- 00_base_schema.sql
--- Base table definitions for the Betza Store / Reefa Sewing Hub app.
+-- Base table definitions for the REEFA SEWING HUB app.
 --
 -- Run this FIRST in the Supabase SQL editor, then run the other files in sql/
 -- (RPC functions + RLS policies). Column names/types are reconstructed from the

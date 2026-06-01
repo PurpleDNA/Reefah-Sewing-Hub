@@ -26,15 +26,15 @@ export function Hero() {
             className="text-center lg:text-left"
           >
             <span className="inline-block px-4 py-2 rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 text-sm font-medium mb-6">
-              Fresh & Organic Produce
+              Your One-Stop Sewing Shop
             </span>
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-6">
-              Fresh Groceries <br />
-              <span className="text-green-600 dark:text-green-400">Delivered to Your Door</span>
+              Quality Fabrics & Supplies <br />
+              <span className="text-green-600 dark:text-green-400">For Every Creation</span>
             </h1>
             <p className="text-lg md:text-xl text-muted-foreground mb-8 max-w-lg mx-auto lg:mx-0">
-              Shop from our wide selection of fresh produce, pantry staples, and household essentials. We deliver right
-              to your neighborhood!
+              Shop from our wide selection of fabrics, threads, tailoring tools, and sewing essentials — everything you
+              need to bring your designs to life.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
               <Button asChild size="lg" className="bg-green-600 hover:bg-green-700 text-lg">
@@ -57,7 +57,7 @@ export function Hero() {
             <div className="relative h-[300px] sm:h-[400px] lg:h-[500px] w-full rounded-2xl overflow-hidden shadow-2xl">
               <Image
                 src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/nrd-D6Tu_L3chLE-unsplash.jpg-KqM5KoGuzkwwPj1x92YvxCWT262onh.jpeg"
-                alt="Fresh produce display"
+                alt="Assorted fabrics and sewing supplies"
                 fill
                 className="object-cover"
                 priority
@@ -73,7 +73,7 @@ export function Hero() {
                 </div>
                 <div>
                   <p className="font-medium">Free Delivery</p>
-                  <p className="text-sm text-muted-foreground">On orders over ₦5,000</p>
+                  <p className="text-sm text-muted-foreground">On orders over GH₵5,000</p>
                 </div>
               </div>
             </div>
@@ -94,7 +94,7 @@ export function Hero() {
               <Truck className="h-6 w-6 text-green-600 dark:text-green-400" />
             </div>
             <h3 className="text-lg font-semibold mb-2">Fast Delivery</h3>
-            <p className="text-muted-foreground">Get your groceries delivered within 24 hours of placing your order.</p>
+            <p className="text-muted-foreground">Get your fabrics and supplies delivered within 24 hours of placing your order.</p>
           </motion.div>
 
           <motion.div
@@ -106,8 +106,8 @@ export function Hero() {
             <div className="bg-green-100 dark:bg-green-900 h-12 w-12 rounded-full flex items-center justify-center mb-4">
               <Clock className="h-6 w-6 text-green-600 dark:text-green-400" />
             </div>
-            <h3 className="text-lg font-semibold mb-2">Fresh Produce</h3>
-            <p className="text-muted-foreground">We source our products daily to ensure maximum freshness.</p>
+            <h3 className="text-lg font-semibold mb-2">Premium Quality</h3>
+            <p className="text-muted-foreground">We carefully source our fabrics and supplies to ensure the highest quality.</p>
           </motion.div>
 
           <motion.div

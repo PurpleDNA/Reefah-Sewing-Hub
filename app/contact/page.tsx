@@ -60,7 +60,7 @@ export default function ContactPage() {
                 <Phone className="h-5 w-5 mr-3 text-green-600 mt-0.5" />
                 <div>
                   <p className="font-medium">Phone</p>
-                  <p className="text-muted-foreground">+234 803 123 4567</p>
+                  <p className="text-muted-foreground">+233 24 657 0570</p>
                 </div>
               </div>
 
@@ -68,7 +68,7 @@ export default function ContactPage() {
                 <Mail className="h-5 w-5 mr-3 text-green-600 mt-0.5" />
                 <div>
                   <p className="font-medium">Email</p>
-                  <p className="text-muted-foreground">contact@betzastore.com</p>
+                  <p className="text-muted-foreground">contact@reefasewinghub.com</p>
                 </div>
               </div>
 
@@ -76,9 +76,8 @@ export default function ContactPage() {
                 <MapPin className="h-5 w-5 mr-3 text-green-600 mt-0.5" />
                 <div>
                   <p className="font-medium">Address</p>
-                  <p className="text-muted-foreground">123 Adeola Odeku Street</p>
-                  <p className="text-muted-foreground">Victoria Island, Lagos</p>
-                  <p className="text-muted-foreground">Nigeria</p>
+                  <p className="text-muted-foreground">TBD</p>
+                  <p className="text-muted-foreground">Ghana</p>
                 </div>
               </div>
 
@@ -104,7 +103,7 @@ export default function ContactPage() {
                 allowFullScreen
                 loading="lazy"
                 referrerPolicy="no-referrer-when-downgrade"
-                title="Betza Store Location"
+                title="REEFA SEWING HUB Location"
                 className="rounded-lg"
               ></iframe>
             </CardContent>
