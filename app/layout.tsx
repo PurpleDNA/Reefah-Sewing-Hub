@@ -1,6 +1,6 @@
 import type React from "react"
 import type { Metadata } from "next"
-import { Inter } from "next/font/google"
+import { Fraunces, Hanken_Grotesk } from "next/font/google"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import Header from "@/components/header"
@@ -11,11 +11,23 @@ import { AuthProvider } from "@/components/auth-provider"
 import { VercelAnalytics } from "@/components/analytics"
 import { Suspense } from "react"
 
-const inter = Inter({ subsets: ["latin"] })
+const fontSans = Hanken_Grotesk({
+  subsets: ["latin"],
+  variable: "--font-sans",
+  display: "swap",
+})
+
+const fontDisplay = Fraunces({
+  subsets: ["latin"],
+  variable: "--font-display",
+  display: "swap",
+  axes: ["opsz", "SOFT", "WONK"],
+})
 
 export const metadata: Metadata = {
   title: "REEFA SEWING HUB - Your One-Stop Sewing Shop",
-  description: "Fabrics, tailoring, and everything you need to sew and create",
+  description:
+    "Beads, stones, trimming, threads, accessories & sewing tools that bring your designs to life. Wholesale & retail in Ghana.",
   generator: "v0.dev",
 }
 
@@ -29,7 +41,7 @@ export default function RootLayout({
       <head>
         <link rel="icon" href="/favicon.png" />
       </head>
-      <body className={inter.className}>
+      <body className={`${fontSans.variable} ${fontDisplay.variable} font-sans`}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           <AuthProvider>
             <CartProvider>
