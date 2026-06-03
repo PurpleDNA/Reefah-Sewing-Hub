@@ -13,6 +13,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toast } from "@/components/ui/use-toast"
+import { ImageUpload, uploadImage } from "@/components/admin/image-upload"
 import type { Product, Category } from "@/types"
 import { Loader2 } from "lucide-react"
 
@@ -24,6 +25,7 @@ interface ProductFormProps {
 export function ProductForm({ product, categories }: ProductFormProps) {
   const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [imageFile, setImageFile] = useState<File | null>(null)
 
   const [formData, setFormData] = useState({
     name: product?.name || "",
@@ -75,9 +77,18 @@ export function ProductForm({ product, categories }: ProductFormProps) {
         generateSlug()
       }
 
+      // Only now (on save) do we upload the chosen image, so abandoned
+      // selections never reach the bucket.
+      let imageUrl = formData.image_url
+      if (imageFile) {
+        imageUrl = await uploadImage("product-images", imageFile)
+      }
+
+      const payload = { ...formData, image_url: imageUrl }
+
       if (product) {
         // Update existing product
-        const { error } = await supabase.from("products").update(formData).eq("id", product.id)
+        const { error } = await supabase.from("products").update(payload).eq("id", product.id)
 
         if (error) throw error
 
@@ -87,7 +98,7 @@ export function ProductForm({ product, categories }: ProductFormProps) {
         })
       } else {
         // Create new product
-        const { error } = await supabase.from("products").insert(formData)
+        const { error } = await supabase.from("products").insert(payload)
 
         if (error) throw error
 
@@ -218,20 +229,14 @@ export function ProductForm({ product, categories }: ProductFormProps) {
           <Card>
             <CardContent className="pt-6">
               <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="image_url">Image URL</Label>
-                  <Input id="image_url" name="image_url" value={formData.image_url} onChange={handleChange} />
-                </div>
-
-                {formData.image_url && (
-                  <div className="aspect-square relative rounded-md overflow-hidden border">
-                    <img
-                      src={formData.image_url || "/placeholder.svg"}
-                      alt="Product preview"
-                      className="object-cover w-full h-full"
-                    />
-                  </div>
-                )}
+                <Label>Product Image</Label>
+                <ImageUpload
+                  value={formData.image_url}
+                  file={imageFile}
+                  onFileChange={setImageFile}
+                  onValueChange={(url) => setFormData((prev) => ({ ...prev, image_url: url }))}
+                  disabled={isSubmitting}
+                />
               </div>
             </CardContent>
           </Card>
