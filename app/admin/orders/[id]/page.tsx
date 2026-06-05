@@ -7,6 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
+import { getOrderStatusMeta } from "@/lib/order-status"
 
 export default async function OrderDetails({ params }: { params: { id: string } }) {
   const supabase = await createClient()
@@ -124,19 +125,8 @@ export default async function OrderDetails({ params }: { params: { id: string } 
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Status</span>
-                  <Badge
-                    variant="outline"
-                    className={`
-                      ${
-                        order.status === "delivered"
-                          ? "bg-green-50 text-green-700"
-                          : order.status === "cancelled"
-                            ? "bg-red-50 text-red-700"
-                            : "bg-amber-50 text-amber-700"
-                      }
-                    `}
-                  >
-                    {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                  <Badge variant="outline" className={getOrderStatusMeta(order.status).className}>
+                    {getOrderStatusMeta(order.status).label}
                   </Badge>
                 </div>
                 <div className="border-t my-4"></div>

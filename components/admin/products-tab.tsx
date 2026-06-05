@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/dialog"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { toast } from "@/components/ui/use-toast"
+import { ImageUpload, uploadImage } from "@/components/admin/image-upload"
 import { Loader2, Plus, Pencil, Trash2, Package } from "lucide-react"
 
 interface Product {
@@ -54,6 +55,7 @@ export default function ProductsTab() {
     featured: false,
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [imageFile, setImageFile] = useState<File | null>(null)
   const [categories, setCategories] = useState<{ id: string; name: string }[]>([])
 
   useEffect(() => {
@@ -124,6 +126,7 @@ export default function ProductsTab() {
       stock: 0,
       featured: false,
     })
+    setImageFile(null)
   }
 
   const generateSlug = (name: string) => {
@@ -151,12 +154,18 @@ export default function ProductsTab() {
       // Generate a slug from the name
       const slug = generateSlug(formData.name)
 
+      // Upload the chosen image only now, on save.
+      let imageUrl = formData.image_url
+      if (imageFile) {
+        imageUrl = await uploadImage("product-images", imageFile)
+      }
+
       console.log("Adding product with data:", {
         name: formData.name,
         slug,
         description: formData.description,
         price: Number(formData.price),
-        image_url: formData.image_url,
+        image_url: imageUrl,
         category_id: formData.category_id || null,
         stock: formData.stock,
         featured: formData.featured,
@@ -170,7 +179,7 @@ export default function ProductsTab() {
           slug: slug,
           description: formData.description,
           price: Number(formData.price),
-          image_url: formData.image_url,
+          image_url: imageUrl,
           category_id: formData.category_id || null,
           stock: formData.stock,
           featured: formData.featured,
@@ -204,7 +213,7 @@ export default function ProductsTab() {
           product_slug: slug,
           product_description: formData.description,
           product_price: Number(formData.price),
-          product_image_url: formData.image_url,
+          product_image_url: imageUrl,
           product_category_id: formData.category_id || null,
           product_stock: formData.stock,
           product_featured: formData.featured,
@@ -270,13 +279,19 @@ export default function ProductsTab() {
         slug = generateSlug(formData.name)
       }
 
+      // Upload the chosen image only now, on save.
+      let imageUrl = formData.image_url
+      if (imageFile) {
+        imageUrl = await uploadImage("product-images", imageFile)
+      }
+
       console.log("Updating product with data:", {
         id: currentProduct.id,
         name: formData.name,
         slug,
         description: formData.description,
         price: Number(formData.price),
-        image_url: formData.image_url,
+        image_url: imageUrl,
         category_id: formData.category_id || null,
         stock: formData.stock,
         featured: formData.featured,
@@ -290,7 +305,7 @@ export default function ProductsTab() {
           slug: slug,
           description: formData.description,
           price: Number(formData.price),
-          image_url: formData.image_url,
+          image_url: imageUrl,
           category_id: formData.category_id || null,
           stock: formData.stock,
           featured: formData.featured,
@@ -327,7 +342,7 @@ export default function ProductsTab() {
           product_slug: slug,
           product_description: formData.description,
           product_price: Number(formData.price),
-          product_image_url: formData.image_url,
+          product_image_url: imageUrl,
           product_category_id: formData.category_id || null,
           product_stock: formData.stock,
           product_featured: formData.featured,
@@ -448,6 +463,7 @@ export default function ProductsTab() {
 
   const openEditDialog = (product: Product) => {
     setCurrentProduct(product)
+    setImageFile(null)
     setFormData({
       name: product.name,
       description: product.description || "",
@@ -567,7 +583,7 @@ export default function ProductsTab() {
           if (!open) resetForm()
         }}
       >
-        <DialogContent className="sm:max-w-[550px]">
+        <DialogContent className="sm:max-w-[550px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Add New Product</DialogTitle>
             <DialogDescription>Fill in the details to add a new product to your inventory.</DialogDescription>
@@ -620,18 +636,17 @@ export default function ProductsTab() {
                 ))}
               </select>
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="image_url" className="text-right">
-                Image URL
-              </Label>
-              <Input
-                id="image_url"
-                name="image_url"
-                value={formData.image_url}
-                onChange={handleInputChange}
-                className="col-span-3"
-                placeholder="https://example.com/image.jpg"
-              />
+            <div className="grid grid-cols-4 items-start gap-4">
+              <Label className="text-right pt-2">Image</Label>
+              <div className="col-span-3">
+                <ImageUpload
+                  value={formData.image_url}
+                  file={imageFile}
+                  onFileChange={setImageFile}
+                  onValueChange={(url) => setFormData({ ...formData, image_url: url })}
+                  disabled={isSubmitting}
+                />
+              </div>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="description" className="text-right">
@@ -704,7 +719,7 @@ export default function ProductsTab() {
           }
         }}
       >
-        <DialogContent className="sm:max-w-[550px]">
+        <DialogContent className="sm:max-w-[550px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit Product</DialogTitle>
             <DialogDescription>Update the details of this product.</DialogDescription>
@@ -757,18 +772,17 @@ export default function ProductsTab() {
                 ))}
               </select>
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="edit-image_url" className="text-right">
-                Image URL
-              </Label>
-              <Input
-                id="edit-image_url"
-                name="image_url"
-                value={formData.image_url}
-                onChange={handleInputChange}
-                className="col-span-3"
-                placeholder="https://example.com/image.jpg"
-              />
+            <div className="grid grid-cols-4 items-start gap-4">
+              <Label className="text-right pt-2">Image</Label>
+              <div className="col-span-3">
+                <ImageUpload
+                  value={formData.image_url}
+                  file={imageFile}
+                  onFileChange={setImageFile}
+                  onValueChange={(url) => setFormData({ ...formData, image_url: url })}
+                  disabled={isSubmitting}
+                />
+              </div>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="edit-description" className="text-right">

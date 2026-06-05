@@ -1,87 +1,86 @@
 import Link from "next/link"
-import { Facebook, Instagram, Twitter } from "lucide-react"
+import { Facebook, Instagram, Phone, Mail, MapPin } from "lucide-react"
 
 export default function Footer() {
   return (
-    <footer className="bg-green-900 text-white">
-      <div className="container mx-auto px-4 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-          <div>
-            <h3 className="text-lg font-bold mb-4">REEFA SEWING HUB</h3>
-            <p className="text-green-100 mb-4">
-              Your one-stop sewing shop for fabrics, tailoring, and everything you need to create.
+    <footer className="relative bg-orange-950 text-white mt-16">
+      {/* stitch accent across the top */}
+      <div className="stitch opacity-70" />
+
+      <div className="container mx-auto px-4 py-14">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
+          {/* Brand */}
+          <div className="md:col-span-1">
+            <Link href="/" className="flex items-center gap-2.5">
+              <span className="grid place-items-center h-10 w-10 rounded-xl bg-green-600 text-white font-display text-2xl font-semibold leading-none">
+                R
+              </span>
+              <span className="flex flex-col leading-none">
+                <span className="font-display text-xl font-semibold tracking-tight">Reefa</span>
+                <span className="text-[0.6rem] font-semibold uppercase tracking-[0.28em] text-green-400">
+                  Sewing Hub
+                </span>
+              </span>
+            </Link>
+            <p className="text-white/60 mt-4 text-sm leading-relaxed">
+              Your one-stop sewing shop for beads, stones, trimming, threads and everything you need to create.
             </p>
-            <div className="flex space-x-4">
-              <a href="#" className="text-white hover:text-green-300">
-                <Facebook className="h-5 w-5" />
-                <span className="sr-only">Facebook</span>
+            <div className="flex space-x-3 mt-5">
+              <a href="#" className="grid place-items-center h-9 w-9 rounded-full bg-white/10 hover:bg-green-600 transition-colors" aria-label="Facebook">
+                <Facebook className="h-4 w-4" />
               </a>
-              <a href="#" className="text-white hover:text-green-300">
-                <Twitter className="h-5 w-5" />
-                <span className="sr-only">Twitter</span>
-              </a>
-              <a href="#" className="text-white hover:text-green-300">
-                <Instagram className="h-5 w-5" />
-                <span className="sr-only">Instagram</span>
+              <a href="#" className="grid place-items-center h-9 w-9 rounded-full bg-white/10 hover:bg-green-600 transition-colors" aria-label="Instagram">
+                <Instagram className="h-4 w-4" />
               </a>
             </div>
           </div>
+
+          {/* Shop */}
           <div>
-            <h3 className="text-lg font-bold mb-4">Shop</h3>
-            <ul className="space-y-2">
-              <li>
-                <Link href="/products" className="text-green-100 hover:text-white">
-                  All Products
-                </Link>
-              </li>
-              <li>
-                <Link href="/about" className="text-green-100 hover:text-white">
-                  About Us
-                </Link>
-              </li>
-              <li>
-                <Link href="/contact" className="text-green-100 hover:text-white">
-                  Contact
-                </Link>
-              </li>
+            <h3 className="font-display text-base font-semibold mb-4 text-green-400">Shop</h3>
+            <ul className="space-y-2.5 text-sm">
+              <li><Link href="/products" className="text-white/70 hover:text-white transition-colors">All Products</Link></li>
+              <li><Link href="/about" className="text-white/70 hover:text-white transition-colors">About Us</Link></li>
+              <li><Link href="/contact" className="text-white/70 hover:text-white transition-colors">Contact</Link></li>
             </ul>
           </div>
+
+          {/* Customer Service */}
           <div>
-            <h3 className="text-lg font-bold mb-4">Customer Service</h3>
-            <ul className="space-y-2">
-              <li>
-                <Link href="/contact" className="text-green-100 hover:text-white">
-                  Help & FAQ
-                </Link>
-              </li>
-              <li>
-                <Link href="/contact" className="text-green-100 hover:text-white">
-                  Shipping Information
-                </Link>
-              </li>
-              <li>
-                <Link href="/contact" className="text-green-100 hover:text-white">
-                  Returns & Exchanges
-                </Link>
-              </li>
-              <li>
-                <Link href="/contact" className="text-green-100 hover:text-white">
-                  Privacy Policy
-                </Link>
-              </li>
+            <h3 className="font-display text-base font-semibold mb-4 text-green-400">Customer Service</h3>
+            <ul className="space-y-2.5 text-sm">
+              <li><Link href="/contact" className="text-white/70 hover:text-white transition-colors">Help &amp; FAQ</Link></li>
+              <li><Link href="/contact" className="text-white/70 hover:text-white transition-colors">Shipping Information</Link></li>
+              <li><Link href="/contact" className="text-white/70 hover:text-white transition-colors">Returns &amp; Exchanges</Link></li>
+              <li><Link href="/contact" className="text-white/70 hover:text-white transition-colors">Privacy Policy</Link></li>
             </ul>
           </div>
+
+          {/* Contact */}
           <div>
-            <h3 className="text-lg font-bold mb-4">Contact Us</h3>
-            <address className="not-italic text-green-100">
-              <p>Address: TBD</p>
-              <p className="mt-2">Phone: +233 24 657 0570</p>
-              <p>Email: contact@reefasewinghub.com</p>
-            </address>
+            <h3 className="font-display text-base font-semibold mb-4 text-green-400">Contact Us</h3>
+            <ul className="space-y-3 text-sm text-white/70">
+              <li className="flex items-start gap-3">
+                <MapPin className="h-4 w-4 mt-0.5 text-green-400 shrink-0" />
+                <span>Address: TBD<br />Ghana</span>
+              </li>
+              <li className="flex items-center gap-3">
+                <Phone className="h-4 w-4 text-green-400 shrink-0" />
+                <a href="tel:+233246570570" className="hover:text-white transition-colors">+233 24 657 0570</a>
+              </li>
+              <li className="flex items-center gap-3">
+                <Mail className="h-4 w-4 text-green-400 shrink-0" />
+                <a href="mailto:contact@reefasewinghub.com" className="hover:text-white transition-colors break-all">
+                  contact@reefasewinghub.com
+                </a>
+              </li>
+            </ul>
           </div>
         </div>
-        <div className="border-t border-green-800 mt-8 pt-8 text-center text-green-100">
-          <p>&copy; {new Date().getFullYear()} REEFA SEWING HUB. All rights reserved.</p>
+
+        <div className="border-t border-white/10 mt-12 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-center text-white/50 text-sm">
+          <p>&copy; {new Date().getFullYear()} Reefa Sewing Hub. All rights reserved.</p>
+          <p className="italic font-display text-white/60">Every detail makes a beautiful creation.</p>
         </div>
       </div>
     </footer>

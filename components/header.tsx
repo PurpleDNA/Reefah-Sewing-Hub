@@ -144,9 +144,17 @@ export default function Header() {
       <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
-          <Link href="/" className="flex items-center">
-            <span className="text-2xl font-bold text-green-600 dark:text-green-400">
-              REEFA <span className="text-orange-500">SEWING HUB</span>
+          <Link href="/" className="flex items-center gap-2.5 group">
+            <span className="grid place-items-center h-10 w-10 rounded-xl bg-green-600 text-white font-display text-2xl font-semibold leading-none shadow-sm shadow-green-600/30 group-hover:rotate-[-6deg] transition-transform">
+              R
+            </span>
+            <span className="flex flex-col leading-none">
+              <span className="font-display text-xl font-semibold tracking-tight text-green-600 dark:text-green-400">
+                Reefa
+              </span>
+              <span className="text-[0.6rem] font-semibold uppercase tracking-[0.28em] text-orange-900 dark:text-orange-200">
+                Sewing Hub
+              </span>
             </span>
           </Link>
 

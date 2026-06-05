@@ -3,7 +3,16 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { LayoutDashboard, ShoppingBasket, Package, Users, Settings, ChevronRight, AlertTriangle } from "lucide-react"
+import {
+  LayoutDashboard,
+  ShoppingBasket,
+  Package,
+  Users,
+  Settings,
+  ChevronRight,
+  AlertTriangle,
+  FolderTree,
+} from "lucide-react"
 
 export default function AdminSidebar() {
   const pathname = usePathname()
@@ -18,6 +27,11 @@ export default function AdminSidebar() {
       name: "Products",
       href: "/admin/products",
       icon: <ShoppingBasket className="h-5 w-5" />,
+    },
+    {
+      name: "Categories",
+      href: "/admin/categories",
+      icon: <FolderTree className="h-5 w-5" />,
     },
     {
       name: "Inventory",

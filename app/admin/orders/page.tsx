@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
 import { Search } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { getOrderStatusMeta } from "@/lib/order-status"
 
 export default async function AdminOrders({ searchParams }: { searchParams: { status?: string; query?: string } }) {
   const supabase = await createClient()
@@ -59,7 +60,7 @@ export default async function AdminOrders({ searchParams }: { searchParams: { st
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Statuses</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
+                <SelectItem value="pending">Awaiting Payment</SelectItem>
                 <SelectItem value="processing">Processing</SelectItem>
                 <SelectItem value="shipped">Shipped</SelectItem>
                 <SelectItem value="delivered">Delivered</SelectItem>
@@ -98,21 +99,8 @@ export default async function AdminOrders({ searchParams }: { searchParams: { st
                     <TableCell>{new Date(order.created_at).toLocaleDateString()}</TableCell>
                     <TableCell>GH₵{order.total.toLocaleString()}</TableCell>
                     <TableCell>
-                      <Badge
-                        variant="outline"
-                        className={`
-                          ${
-                            order.status === "delivered"
-                              ? "bg-green-50 text-green-700"
-                              : order.status === "cancelled"
-                                ? "bg-red-50 text-red-700"
-                                : order.status === "shipped"
-                                  ? "bg-blue-50 text-blue-700"
-                                  : "bg-amber-50 text-amber-700"
-                          }
-                        `}
-                      >
-                        {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                      <Badge variant="outline" className={getOrderStatusMeta(order.status).className}>
+                        {getOrderStatusMeta(order.status).label}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">

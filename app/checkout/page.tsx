@@ -12,14 +12,13 @@ import { Label } from "@/components/ui/label"
 import { Card } from "@/components/ui/card"
 import { createClient } from "@/lib/supabase/client"
 import { toast } from "@/components/ui/use-toast"
-import { CheckCircle2, Loader2 } from "lucide-react"
+import { Loader2 } from "lucide-react"
 
 export default function CheckoutPage() {
-  const { items, total, clearCart } = useCart()
+  const { items, total } = useCart()
   const { user } = useAuth()
   const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [isSuccess, setIsSuccess] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const [formData, setFormData] = useState({
@@ -159,14 +158,21 @@ export default function CheckoutPage() {
         throw itemsError
       }
 
-      // Success!
-      setIsSuccess(true)
-      clearCart()
+      // Order created as pending_payment. Kick off the Flutterwave bank-transfer
+      // charge, then send the customer to the dedicated pay page. The cart is NOT
+      // cleared yet — that happens once payment is confirmed on the pay page.
+      const res = await fetch("/api/payments/initiate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId: order }),
+      })
 
-      // Redirect to success page after a delay
-      setTimeout(() => {
-        router.push("/")
-      }, 5000)
+      if (!res.ok) {
+        const detail = await res.json().catch(() => ({}))
+        throw new Error(detail?.error || "Could not start the payment. Please try again.")
+      }
+
+      router.push(`/checkout/${order}/pay`)
     } catch (error: any) {
       console.error("Checkout error:", error)
       setError(error.message || "There was a problem processing your order. Please try again.")
@@ -178,21 +184,6 @@ export default function CheckoutPage() {
     } finally {
       setIsSubmitting(false)
     }
-  }
-
-  if (isSuccess) {
-    return (
-      <div className="container mx-auto px-4 py-16 text-center">
-        <CheckCircle2 className="mx-auto h-16 w-16 text-green-500 mb-4" />
-        <h2 className="text-2xl font-bold mb-2">Order Placed Successfully!</h2>
-        <p className="text-muted-foreground mb-8">
-          Thank you for your order. We'll send you a confirmation email shortly.
-        </p>
-        <Button asChild>
-          <a href="/">Return to Home</a>
-        </Button>
-      </div>
-    )
   }
 
   return (

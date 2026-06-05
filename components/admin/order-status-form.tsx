@@ -28,9 +28,15 @@ export function OrderStatusForm({ orderId, currentStatus }: OrderStatusFormProps
     try {
       const supabase = await createClient()
 
-      const { error } = await supabase.from("orders").update({ status }).eq("id", orderId)
+      // SECURITY DEFINER RPC: admins can change only the status column. orders
+      // has no UPDATE RLS policy, so a direct .update() would be silently denied.
+      const { data, error } = await supabase.rpc("admin_update_order_status", {
+        p_order_id: orderId,
+        p_status: status,
+      })
 
       if (error) throw error
+      if (data === false) throw new Error("Order not found or could not be updated.")
 
       showSuccess("The order status has been updated successfully.", "Order updated")
 
@@ -49,7 +55,7 @@ export function OrderStatusForm({ orderId, currentStatus }: OrderStatusFormProps
           <SelectValue placeholder="Select status" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="pending">Pending</SelectItem>
+          <SelectItem value="pending">Awaiting Payment</SelectItem>
           <SelectItem value="processing">Processing</SelectItem>
           <SelectItem value="shipped">Shipped</SelectItem>
           <SelectItem value="delivered">Delivered</SelectItem>
