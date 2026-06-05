@@ -523,7 +523,7 @@ export default function ProductsTab() {
                     </div>
                   </TableCell>
                   <TableCell>{product.categories?.name || "Uncategorized"}</TableCell>
-                  <TableCell>₦{product.price.toLocaleString()}</TableCell>
+                  <TableCell>GH₵{product.price.toLocaleString()}</TableCell>
                   <TableCell>
                     <span
                       className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
@@ -588,7 +588,7 @@ export default function ProductsTab() {
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="price" className="text-right">
-                Price (₦) *
+                Price (GH₵) *
               </Label>
               <Input
                 id="price"
@@ -725,7 +725,7 @@ export default function ProductsTab() {
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="edit-price" className="text-right">
-                Price (₦) *
+                Price (GH₵) *
               </Label>
               <Input
                 id="edit-price"
@@ -848,7 +848,7 @@ export default function ProductsTab() {
           </DialogHeader>
           <div className="py-4">
             <p className="font-medium">{currentProduct?.name}</p>
-            <p className="text-sm text-muted-foreground mt-1">Price: ₦{currentProduct?.price?.toLocaleString()}</p>
+            <p className="text-sm text-muted-foreground mt-1">Price: GH₵{currentProduct?.price?.toLocaleString()}</p>
           </div>
           <DialogFooter>
             <Button

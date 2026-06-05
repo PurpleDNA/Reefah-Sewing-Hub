@@ -73,9 +73,9 @@ export default async function OrderDetails({ params }: { params: { id: string } 
                             <span>{item.products?.name}</span>
                           </div>
                         </TableCell>
-                        <TableCell>₦{item.price.toLocaleString()}</TableCell>
+                        <TableCell>GH₵{item.price.toLocaleString()}</TableCell>
                         <TableCell>{item.quantity}</TableCell>
-                        <TableCell className="text-right">₦{(item.price * item.quantity).toLocaleString()}</TableCell>
+                        <TableCell className="text-right">GH₵{(item.price * item.quantity).toLocaleString()}</TableCell>
                       </TableRow>
                     ))}
                 </TableBody>
@@ -142,7 +142,7 @@ export default async function OrderDetails({ params }: { params: { id: string } 
                 <div className="border-t my-4"></div>
                 <div className="flex justify-between font-medium">
                   <span>Total</span>
-                  <span>₦{order.total.toLocaleString()}</span>
+                  <span>GH₵{order.total.toLocaleString()}</span>
                 </div>
               </div>
             </CardContent>

@@ -158,7 +158,7 @@ export default function OrdersPage() {
                   >
                     {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
                   </Badge>
-                  <p className="font-medium">₦{order.total.toLocaleString()}</p>
+                  <p className="font-medium">GH₵{order.total.toLocaleString()}</p>
                 </div>
               </div>
             </CardHeader>
@@ -183,11 +183,11 @@ export default function OrdersPage() {
                         <div>
                           <p className="font-medium">{item.products?.name || "Product"}</p>
                           <p className="text-sm text-muted-foreground">
-                            {item.quantity} x ₦{item.price.toLocaleString()}
+                            {item.quantity} x GH₵{item.price.toLocaleString()}
                           </p>
                         </div>
                       </div>
-                      <p className="font-medium">₦{(item.quantity * item.price).toLocaleString()}</p>
+                      <p className="font-medium">GH₵{(item.quantity * item.price).toLocaleString()}</p>
                     </div>
                   ))}
                 </div>

@@ -286,14 +286,14 @@ export default function CheckoutPage() {
                   <span>
                     {item.name} x {item.quantity}
                   </span>
-                  <span>₦{(item.price * item.quantity).toLocaleString()}</span>
+                  <span>GH₵{(item.price * item.quantity).toLocaleString()}</span>
                 </div>
               ))}
             </div>
             <div className="border-t pt-4 space-y-2">
               <div className="flex justify-between">
                 <span>Subtotal</span>
-                <span>₦{total.toLocaleString()}</span>
+                <span>GH₵{total.toLocaleString()}</span>
               </div>
               <div className="flex justify-between">
                 <span>Shipping</span>
@@ -301,7 +301,7 @@ export default function CheckoutPage() {
               </div>
               <div className="border-t pt-2 mt-2 font-bold flex justify-between">
                 <span>Total</span>
-                <span>₦{total.toLocaleString()}</span>
+                <span>GH₵{total.toLocaleString()}</span>
               </div>
             </div>
           </Card>

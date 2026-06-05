@@ -207,7 +207,7 @@ export default function OrdersTab() {
                       {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
                     </Badge>
                   </TableCell>
-                  <TableCell>₦{order.total.toLocaleString()}</TableCell>
+                  <TableCell>GH₵{order.total.toLocaleString()}</TableCell>
                   <TableCell className="text-right">
                     <Button variant="ghost" size="icon" onClick={() => openViewDialog(order)}>
                       <Eye className="h-4 w-4" />
@@ -286,8 +286,8 @@ export default function OrdersTab() {
                     <TableRow key={item.id}>
                       <TableCell>{item.products?.name || "Product"}</TableCell>
                       <TableCell className="text-right">{item.quantity}</TableCell>
-                      <TableCell className="text-right">₦{item.price.toLocaleString()}</TableCell>
-                      <TableCell className="text-right">₦{(item.price * item.quantity).toLocaleString()}</TableCell>
+                      <TableCell className="text-right">GH₵{item.price.toLocaleString()}</TableCell>
+                      <TableCell className="text-right">GH₵{(item.price * item.quantity).toLocaleString()}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -297,7 +297,7 @@ export default function OrdersTab() {
               <div className="text-right">
                 <div className="flex justify-between gap-8">
                   <span className="font-medium">Total:</span>
-                  <span className="font-bold">₦{currentOrder?.total.toLocaleString()}</span>
+                  <span className="font-bold">GH₵{currentOrder?.total.toLocaleString()}</span>
                 </div>
               </div>
             </div>

@@ -79,7 +79,7 @@ export default async function AdminProducts({ searchParams }: { searchParams: { 
                     </TableCell>
                     <TableCell className="font-medium">{product.name}</TableCell>
                     <TableCell>{product.categories?.name}</TableCell>
-                    <TableCell>₦{product.price.toLocaleString()}</TableCell>
+                    <TableCell>GH₵{product.price.toLocaleString()}</TableCell>
                     <TableCell>{product.stock}</TableCell>
                     <TableCell>
                       {product.stock > 0 ? (

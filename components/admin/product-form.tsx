@@ -169,7 +169,7 @@ export function ProductForm({ product, categories }: ProductFormProps) {
               <div className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="price">Price (₦)</Label>
+                    <Label htmlFor="price">Price (GH₵)</Label>
                     <Input
                       id="price"
                       name="price"
@@ -183,7 +183,7 @@ export function ProductForm({ product, categories }: ProductFormProps) {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="sale_price">Sale Price (₦) (Optional)</Label>
+                    <Label htmlFor="sale_price">Sale Price (GH₵) (Optional)</Label>
                     <Input
                       id="sale_price"
                       name="sale_price"

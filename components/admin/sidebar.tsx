@@ -46,7 +46,7 @@ export default function AdminSidebar() {
       <div className="p-6">
         <Link href="/" className="flex items-center">
           <span className="text-xl font-bold text-green-600 dark:text-green-400">
-            Betza<span className="text-orange-500">Store</span>
+            REEFA <span className="text-orange-500">SEWING HUB</span>
           </span>
         </Link>
         <p className="text-sm text-muted-foreground mt-1">Admin Dashboard</p>

@@ -16,11 +16,11 @@ import { Loader2 } from "lucide-react"
 export default function SettingsPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [storeSettings, setStoreSettings] = useState({
-    storeName: "FreshMart",
-    storeEmail: "info@freshmart.com",
-    storePhone: "+234 123 456 7890",
-    storeAddress: "123 Market Street, Lagos, Nigeria",
-    storeDescription: "Your neighborhood grocery store with fresh produce and everyday essentials.",
+    storeName: "REEFA SEWING HUB",
+    storeEmail: "contact@reefasewinghub.com",
+    storePhone: "+233 24 657 0570",
+    storeAddress: "TBD, Ghana",
+    storeDescription: "Your one-stop sewing shop for fabrics, tailoring, and everything you need to create.",
     enableReviews: true,
     enableGuestCheckout: true,
   })

@@ -4,7 +4,7 @@ import { CategoryFilter } from "@/components/category-filter"
 import type { Metadata } from "next"
 
 export const metadata: Metadata = {
-  title: "Products - Betza Store",
+  title: "Products - REEFA SEWING HUB",
   description: "Browse our wide selection of products",
 }
 

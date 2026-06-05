@@ -83,12 +83,12 @@ export default function CartPage() {
                       </div>
                       <div>
                         <h3 className="font-medium">{item.name}</h3>
-                        <p className="text-sm text-muted-foreground md:hidden">₦{item.price.toLocaleString()}</p>
+                        <p className="text-sm text-muted-foreground md:hidden">GH₵{item.price.toLocaleString()}</p>
                       </div>
                     </div>
 
                     <div className="col-span-1 md:col-span-2 text-left md:text-center">
-                      <p className="font-medium hidden md:block">₦{item.price.toLocaleString()}</p>
+                      <p className="font-medium hidden md:block">GH₵{item.price.toLocaleString()}</p>
                     </div>
 
                     <div className="col-span-1 md:col-span-2 flex items-center">
@@ -137,7 +137,7 @@ export default function CartPage() {
                     </div>
 
                     <div className="col-span-1 md:col-span-2 text-left md:text-right">
-                      <p className="font-medium">₦{(item.price * item.quantity).toLocaleString()}</p>
+                      <p className="font-medium">GH₵{(item.price * item.quantity).toLocaleString()}</p>
                     </div>
                   </div>
                   {items.indexOf(item) !== items.length - 1 && <Separator className="my-6" />}
@@ -154,16 +154,16 @@ export default function CartPage() {
             <div className="space-y-2 mb-4">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Subtotal</span>
-                <span className="font-medium">₦{total.toLocaleString()}</span>
+                <span className="font-medium">GH₵{total.toLocaleString()}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Shipping</span>
-                <span className="font-medium">₦0</span>
+                <span className="font-medium">GH₵0</span>
               </div>
               <Separator className="my-2" />
               <div className="flex justify-between text-lg">
                 <span className="font-medium">Total</span>
-                <span className="font-bold">₦{total.toLocaleString()}</span>
+                <span className="font-bold">GH₵{total.toLocaleString()}</span>
               </div>
             </div>
 
