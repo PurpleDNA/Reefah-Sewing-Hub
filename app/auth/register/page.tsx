@@ -2,9 +2,10 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
+import { useAuth } from "@/hooks/use-auth"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -12,14 +13,23 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { toast } from "@/components/ui/use-toast"
 import Link from "next/link"
 import { FcGoogle } from "react-icons/fc"
+import { Loader2 } from "lucide-react"
 
 export default function RegisterPage() {
   const router = useRouter()
+  const { user, isLoading: authLoading } = useAuth()
   const [fullName, setFullName] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+
+  // Already signed in? Don't show the register form — send them home.
+  useEffect(() => {
+    if (!authLoading && user) {
+      router.replace("/")
+    }
+  }, [authLoading, user, router])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -95,6 +105,14 @@ export default function RegisterPage() {
         variant: "destructive",
       })
     }
+  }
+
+  if (authLoading || user) {
+    return (
+      <div className="container mx-auto px-4 py-16 flex justify-center">
+        <Loader2 className="h-10 w-10 animate-spin text-muted-foreground" />
+      </div>
+    )
   }
 
   return (

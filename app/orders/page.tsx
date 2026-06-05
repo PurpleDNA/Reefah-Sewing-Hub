@@ -32,6 +32,7 @@ import Link from "next/link"
 import { CreditCard, Loader2, Package, Pencil, ShoppingBag, Trash2 } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 import { toast } from "@/components/ui/use-toast"
+import { getOrderStatusMeta } from "@/lib/order-status"
 
 export default function OrdersPage() {
   const { user } = useAuth()
@@ -179,24 +180,6 @@ export default function OrdersPage() {
 }
 
 // ---------------------------------------------------------------------------
-// Payment status badge — distinct from the fulfillment `status` badge.
-// ---------------------------------------------------------------------------
-function PaymentBadge({ status }: { status?: string }) {
-  const map: Record<string, { label: string; className: string }> = {
-    pending_payment: { label: "Awaiting payment", className: "bg-amber-50 text-amber-700" },
-    paid: { label: "Paid", className: "bg-green-50 text-green-700" },
-    failed: { label: "Payment failed", className: "bg-red-50 text-red-700" },
-    expired: { label: "Payment expired", className: "bg-red-50 text-red-700" },
-  }
-  const entry = map[status || ""] || { label: status || "Unknown", className: "bg-muted text-muted-foreground" }
-  return (
-    <Badge variant="outline" className={entry.className}>
-      {entry.label}
-    </Badge>
-  )
-}
-
-// ---------------------------------------------------------------------------
 // Single order card. Owns its own edit-dialog / delete-confirm / pay state.
 // ---------------------------------------------------------------------------
 function OrderCard({
@@ -336,20 +319,8 @@ function OrderCard({
             </CardTitle>
           </div>
           <div className="flex items-center gap-4">
-            <PaymentBadge status={order.payment_status} />
-            <Badge
-              variant="outline"
-              className={`
-                ${
-                  order.status === "delivered"
-                    ? "bg-green-50 text-green-700"
-                    : order.status === "cancelled"
-                      ? "bg-red-50 text-red-700"
-                      : "bg-amber-50 text-amber-700"
-                }
-              `}
-            >
-              {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+            <Badge variant="outline" className={getOrderStatusMeta(order.status).className}>
+              {getOrderStatusMeta(order.status).label}
             </Badge>
             <p className="font-medium">GH₵{order.total.toLocaleString()}</p>
           </div>

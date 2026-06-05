@@ -2,9 +2,10 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
+import { useAuth } from "@/hooks/use-auth"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -19,8 +20,17 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 export default function AuthPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { user, isLoading: authLoading } = useAuth()
   const redirectUrl = searchParams.get("redirect") || "/"
   const verifyEmail = searchParams.get("verifyEmail") === "true"
+
+  // Already signed in? Don't sit on the login page — bounce to where they were
+  // headed (or home). replace() so the login page stays out of history.
+  useEffect(() => {
+    if (!authLoading && user) {
+      router.replace(redirectUrl)
+    }
+  }, [authLoading, user, redirectUrl, router])
 
   const [isLoading, setIsLoading] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
@@ -82,8 +92,8 @@ export default function AuthPage() {
         description: "Welcome back!",
       })
 
-      // Redirect to home page
-      router.push("/")
+      // Return the user to where they were headed (or home).
+      router.push(redirectUrl)
       router.refresh()
     } catch (error: any) {
       console.error("Login error:", error)
@@ -171,7 +181,9 @@ export default function AuthPage() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
+          // Carry the post-login destination through OAuth so the callback can
+          // return the user where they were headed (Supabase appends ?code=...).
+          redirectTo: `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(redirectUrl)}`,
         },
       })
 
@@ -210,6 +222,16 @@ export default function AuthPage() {
         variant: "destructive",
       })
     }
+  }
+
+  // While auth is resolving, or we're about to redirect a signed-in user,
+  // show a spinner instead of the login form.
+  if (authLoading || user) {
+    return (
+      <div className="container mx-auto flex items-center justify-center min-h-[80vh] px-4 py-8">
+        <Loader2 className="h-10 w-10 animate-spin text-muted-foreground" />
+      </div>
+    )
   }
 
   return (
