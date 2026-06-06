@@ -1,6 +1,9 @@
 import { createClient } from "@/lib/supabase/server"
 import { NextResponse } from "next/server"
 
+// Reads the Supabase session cookie, so it must be rendered per-request.
+export const dynamic = "force-dynamic"
+
 export async function GET() {
   try {
     const supabase = await createClient()
