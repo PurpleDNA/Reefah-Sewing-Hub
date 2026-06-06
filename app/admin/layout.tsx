@@ -44,10 +44,16 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       redirect("/")
     }
 
-    // If we get here, user is admin
+    // If we get here, user is admin. Fetch unread contact-message count for
+    // the sidebar badge (admins can read via RLS).
+    const { count: unreadMessages } = await supabase
+      .from("contact_messages")
+      .select("*", { count: "exact", head: true })
+      .eq("is_read", false)
+
     return (
       <div className="flex min-h-screen">
-        <AdminSidebar />
+        <AdminSidebar unreadMessages={unreadMessages ?? 0} />
         <div className="flex-1 p-8">{children}</div>
       </div>
     )

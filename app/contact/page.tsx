@@ -1,11 +1,58 @@
+"use client"
+
+import type React from "react"
+
+import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
-import { Phone, Mail, MapPin, Clock } from "lucide-react"
+import { Phone, Mail, MapPin, Clock, Loader2 } from "lucide-react"
+import { createClient } from "@/lib/supabase/client"
+import { toast } from "@/components/ui/use-toast"
+
+const EMPTY_FORM = { name: "", email: "", subject: "", message: "" }
 
 export default function ContactPage() {
+  const [form, setForm] = useState(EMPTY_FORM)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setForm((prev) => ({ ...prev, [e.target.id]: e.target.value }))
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsSubmitting(true)
+
+    try {
+      const supabase = createClient()
+      const { error } = await supabase.from("contact_messages").insert({
+        name: form.name.trim(),
+        email: form.email.trim(),
+        subject: form.subject.trim(),
+        message: form.message.trim(),
+      })
+
+      if (error) throw error
+
+      toast({
+        title: "Message sent",
+        description: "Thanks for reaching out — we'll get back to you as soon as possible.",
+      })
+      setForm(EMPTY_FORM)
+    } catch (err: any) {
+      toast({
+        title: "Could not send message",
+        description: err.message || "Something went wrong. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
   return (
     <div className="container mx-auto px-4 py-12">
       <h1 className="text-4xl font-bold text-center mb-2">Contact Us</h1>
@@ -20,30 +67,56 @@ export default function ContactPage() {
             <CardDescription>Fill out the form below and we'll get back to you as soon as possible.</CardDescription>
           </CardHeader>
           <CardContent>
-            <form className="space-y-6">
+            <form className="space-y-6" onSubmit={handleSubmit}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="name">Name</Label>
-                  <Input id="name" placeholder="Your name" required />
+                  <Input id="name" placeholder="Your name" value={form.name} onChange={handleChange} required />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
-                  <Input id="email" type="email" placeholder="Your email" required />
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="Your email"
+                    value={form.email}
+                    onChange={handleChange}
+                    required
+                  />
                 </div>
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="subject">Subject</Label>
-                <Input id="subject" placeholder="Message subject" required />
+                <Input
+                  id="subject"
+                  placeholder="Message subject"
+                  value={form.subject}
+                  onChange={handleChange}
+                  required
+                />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="message">Message</Label>
-                <Textarea id="message" placeholder="How can we help you?" className="min-h-[150px]" required />
+                <Textarea
+                  id="message"
+                  placeholder="How can we help you?"
+                  className="min-h-[150px]"
+                  value={form.message}
+                  onChange={handleChange}
+                  required
+                />
               </div>
 
-              <Button type="submit" className="w-full bg-green-600 hover:bg-green-700">
-                Send Message
+              <Button type="submit" className="w-full bg-green-600 hover:bg-green-700" disabled={isSubmitting}>
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Sending...
+                  </>
+                ) : (
+                  "Send Message"
+                )}
               </Button>
             </form>
           </CardContent>

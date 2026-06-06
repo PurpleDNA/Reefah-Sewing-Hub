@@ -13,6 +13,16 @@ import {
 } from "@/components/ui/dialog"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { toast } from "@/components/ui/use-toast"
 import { Loader2, Package, Eye } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
@@ -53,6 +63,7 @@ export default function OrdersTab() {
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false)
   const [currentOrder, setCurrentOrder] = useState<Order | null>(null)
   const [statusFilter, setStatusFilter] = useState<string>("all")
+  const [pendingCancelId, setPendingCancelId] = useState<string | null>(null)
 
   useEffect(() => {
     fetchOrders()
@@ -121,6 +132,15 @@ export default function OrdersTab() {
         variant: "destructive",
       })
     }
+  }
+
+  const handleStatusChange = (order: Order, value: string) => {
+    // Cancelling an order is destructive — confirm first.
+    if (value === "cancelled" && order.status !== "cancelled") {
+      setPendingCancelId(order.id)
+      return
+    }
+    updateOrderStatus(order.id, value)
   }
 
   const openViewDialog = (order: Order) => {
@@ -254,7 +274,7 @@ export default function OrdersTab() {
             <h3 className="font-medium mb-2">Order Status</h3>
             <Select
               value={currentOrder?.status}
-              onValueChange={(value) => currentOrder && updateOrderStatus(currentOrder.id, value)}
+              onValueChange={(value) => currentOrder && handleStatusChange(currentOrder, value)}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select status" />
@@ -308,6 +328,30 @@ export default function OrdersTab() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Confirm order cancellation */}
+      <AlertDialog open={pendingCancelId !== null} onOpenChange={(open) => !open && setPendingCancelId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancel this order?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to cancel this order? This marks the order as cancelled.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep order</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-600 hover:bg-red-700"
+              onClick={() => {
+                if (pendingCancelId) updateOrderStatus(pendingCancelId, "cancelled")
+                setPendingCancelId(null)
+              }}
+            >
+              Yes, cancel order
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

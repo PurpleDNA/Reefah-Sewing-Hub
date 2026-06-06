@@ -1,8 +1,10 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
+import { createClient } from "@/lib/supabase/client"
 import {
   LayoutDashboard,
   ShoppingBasket,
@@ -12,10 +14,29 @@ import {
   ChevronRight,
   AlertTriangle,
   FolderTree,
+  Mail,
 } from "lucide-react"
 
-export default function AdminSidebar() {
+export default function AdminSidebar({ unreadMessages = 0 }: { unreadMessages?: number }) {
   const pathname = usePathname()
+  const [unread, setUnread] = useState(unreadMessages)
+
+  // Keep the badge fresh as the admin moves between pages (e.g. after marking
+  // messages read). The server-provided count seeds the initial render.
+  useEffect(() => {
+    let active = true
+    const supabase = createClient()
+    supabase
+      .from("contact_messages")
+      .select("*", { count: "exact", head: true })
+      .eq("is_read", false)
+      .then((res: { count: number | null }) => {
+        if (active && typeof res.count === "number") setUnread(res.count)
+      })
+    return () => {
+      active = false
+    }
+  }, [pathname])
 
   const navItems = [
     {
@@ -47,6 +68,11 @@ export default function AdminSidebar() {
       name: "Customers",
       href: "/admin/customers",
       icon: <Users className="h-5 w-5" />,
+    },
+    {
+      name: "Messages",
+      href: "/admin/messages",
+      icon: <Mail className="h-5 w-5" />,
     },
     {
       name: "Settings",
@@ -81,7 +107,13 @@ export default function AdminSidebar() {
               >
                 {item.icon}
                 <span>{item.name}</span>
-                {pathname === item.href && <ChevronRight className="ml-auto h-4 w-4" />}
+                {item.href === "/admin/messages" && unread > 0 ? (
+                  <span className="ml-auto inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-green-600 px-1.5 text-xs font-semibold text-white">
+                    {unread}
+                  </span>
+                ) : (
+                  pathname === item.href && <ChevronRight className="ml-auto h-4 w-4" />
+                )}
               </Link>
             </li>
           ))}

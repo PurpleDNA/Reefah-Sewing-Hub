@@ -21,6 +21,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
   const supabaseRef = useRef<any>(null)
+  // Tracks the last known signed-in user id so we only refresh the router on a
+  // real change. `undefined` means "not yet initialized".
+  const previousUserIdRef = useRef<string | null | undefined>(undefined)
 
   // Initialize Supabase client
   useEffect(() => {
@@ -119,8 +122,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             }, 0)
           }
 
-          // Only refresh the router if the component is still mounted
-          if (isMounted) {
+          // Only refresh the router when the signed-in user actually changes
+          // (sign-in, sign-out, or account switch). onAuthStateChange also
+          // fires on TOKEN_REFRESHED and tab refocus with the same user; those
+          // used to trigger router.refresh() every time, which re-runs the
+          // route and flashes the layout's Suspense fallback — most visible as
+          // a "reloading" glitch on the 404 / not-found page.
+          const currentUserId = currentUser?.id ?? null
+          const previousUserId = previousUserIdRef.current
+          previousUserIdRef.current = currentUserId
+
+          if (isMounted && previousUserId !== undefined && previousUserId !== currentUserId) {
             router.refresh()
           }
         })

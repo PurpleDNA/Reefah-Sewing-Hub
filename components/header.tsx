@@ -10,7 +10,6 @@ import { Input } from "@/components/ui/input"
 import { ShoppingCart, Menu, User, Search, X, ShieldCheck, LogOut, Package, Loader2 } from "lucide-react"
 import { useCart } from "@/hooks/use-cart"
 import { useAuth } from "@/hooks/use-auth"
-import { ThemeToggle } from "@/components/theme-toggle"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -180,8 +179,6 @@ export default function Header() {
               <Search className="h-5 w-5" />
             </Button>
 
-            <ThemeToggle />
-
             {/* Admin Button - Only visible for admin users */}
             {isAdminLoading ? (
               <Button variant="outline" size="sm" disabled className="bg-gray-300">
@@ -213,9 +210,6 @@ export default function Header() {
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem disabled>{user.email}</DropdownMenuItem>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem asChild>
-                      <Link href="/profile">My Profile</Link>
-                    </DropdownMenuItem>
                     <DropdownMenuItem asChild>
                       <Link href="/orders">
                         <Package className="h-4 w-4 mr-2" />
@@ -290,8 +284,6 @@ export default function Header() {
             <Button variant="ghost" size="icon" onClick={() => setIsSearchOpen(!isSearchOpen)} aria-label="Search">
               <Search className="h-5 w-5" />
             </Button>
-
-            <ThemeToggle />
 
             <Button variant="outline" size="icon" asChild className="relative">
               <Link href="/cart">
@@ -374,13 +366,6 @@ export default function Header() {
               {isClient ? (
                 user ? (
                   <>
-                    <Link
-                      href="/profile"
-                      className="px-4 py-2 text-sm font-medium transition-colors hover:bg-muted"
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      My Profile
-                    </Link>
                     <Link
                       href="/orders"
                       className="px-4 py-2 text-sm font-medium transition-colors hover:bg-muted flex items-center"
