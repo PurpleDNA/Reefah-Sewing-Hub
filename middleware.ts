@@ -5,6 +5,19 @@ export function middleware(request: NextRequest) {
   // Get the pathname
   const pathname = request.nextUrl.pathname
 
+  // Safety net for password-recovery / OAuth links: if Supabase can't honor the
+  // configured redirectTo (e.g. the URL isn't in the dashboard allow-list) it
+  // falls back to the Site URL and appends ?code=... to the root. Forward that
+  // code to /auth/callback so the session gets exchanged and the user lands on
+  // the reset-password form instead of getting stranded on the homepage.
+  const code = request.nextUrl.searchParams.get("code")
+  if (pathname === "/" && code) {
+    const callbackUrl = new URL("/auth/callback", request.url)
+    callbackUrl.searchParams.set("code", code)
+    callbackUrl.searchParams.set("redirect", "/auth/reset-password")
+    return NextResponse.redirect(callbackUrl)
+  }
+
   // Add custom headers for debugging
   const response = NextResponse.next({
     request: {
