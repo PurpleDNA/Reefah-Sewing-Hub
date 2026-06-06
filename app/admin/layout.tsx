@@ -3,6 +3,10 @@ import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import AdminSidebar from "@/components/admin/sidebar"
 
+// This tree reads cookies (Supabase session), so it can never be statically
+// rendered. Declare it dynamic so Next.js doesn't attempt static rendering.
+export const dynamic = "force-dynamic"
+
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   try {
     const supabase = await createClient()
@@ -48,6 +52,18 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       </div>
     )
   } catch (error) {
+    // `redirect()` and dynamic-rendering bailouts work by throwing a special
+    // error carrying a `digest`. Those are control flow, not failures — let
+    // them propagate so the intended redirect (login / non-admin) actually
+    // happens instead of being swallowed.
+    if (
+      error &&
+      typeof (error as { digest?: unknown }).digest === "string"
+    ) {
+      throw error
+    }
+
+    // Only genuinely unexpected errors (e.g. Supabase/network) reach here.
     console.error("Error in admin layout:", error)
     redirect("/")
   }
