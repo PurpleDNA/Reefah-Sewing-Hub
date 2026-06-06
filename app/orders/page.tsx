@@ -39,6 +39,7 @@ export default function OrdersPage() {
   const [orders, setOrders] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [statusFilter, setStatusFilter] = useState<string>("all")
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -161,20 +162,59 @@ export default function OrdersPage() {
     )
   }
 
+  // Canonical status order; only surface filters for statuses the user actually has.
+  const STATUS_ORDER = ["pending", "processing", "shipped", "delivered", "cancelled"]
+  const counts = orders.reduce<Record<string, number>>((acc, o) => {
+    acc[o.status] = (acc[o.status] || 0) + 1
+    return acc
+  }, {})
+  const availableStatuses = STATUS_ORDER.filter((s) => counts[s])
+  const filteredOrders = statusFilter === "all" ? orders : orders.filter((o) => o.status === statusFilter)
+
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-8">My Orders</h1>
 
-      <div className="space-y-8">
-        {orders.map((order) => (
-          <OrderCard
-            key={order.id}
-            order={order}
-            onUpdated={handleOrderUpdated}
-            onDeleted={handleOrderDeleted}
-          />
+      <div className="flex flex-wrap gap-2 mb-8">
+        <Button
+          variant={statusFilter === "all" ? "default" : "outline"}
+          size="sm"
+          onClick={() => setStatusFilter("all")}
+        >
+          All <span className="ml-1.5 text-xs opacity-70">{orders.length}</span>
+        </Button>
+        {availableStatuses.map((status) => (
+          <Button
+            key={status}
+            variant={statusFilter === status ? "default" : "outline"}
+            size="sm"
+            onClick={() => setStatusFilter(status)}
+          >
+            {getOrderStatusMeta(status).label}
+            <span className="ml-1.5 text-xs opacity-70">{counts[status]}</span>
+          </Button>
         ))}
       </div>
+
+      {filteredOrders.length === 0 ? (
+        <div className="text-center py-16">
+          <Package className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+          <p className="text-muted-foreground">
+            No {getOrderStatusMeta(statusFilter).label.toLowerCase()} orders.
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-8">
+          {filteredOrders.map((order) => (
+            <OrderCard
+              key={order.id}
+              order={order}
+              onUpdated={handleOrderUpdated}
+              onDeleted={handleOrderDeleted}
+            />
+          ))}
+        </div>
+      )}
     </div>
   )
 }
