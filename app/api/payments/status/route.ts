@@ -22,7 +22,7 @@ export async function GET(request: Request) {
 
     const { data: payment, error } = await supabase
       .from("payments")
-      .select("status, amount, currency, account_number, account_bank_name, account_expiration")
+      .select("status, amount, amount_paid, overpaid_amount, currency, account_number, account_bank_name, account_expiration")
       .eq("reference", reference)
       .single()
 

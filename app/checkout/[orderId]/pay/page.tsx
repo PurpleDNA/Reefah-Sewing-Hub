@@ -9,12 +9,14 @@ import { createClient } from "@/lib/supabase/client"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { toast } from "@/components/ui/use-toast"
-import { CheckCircle2, Clock, Copy, Loader2, ShoppingBag } from "lucide-react"
+import { AlertTriangle, CheckCircle2, Clock, Copy, Loader2, ShoppingBag } from "lucide-react"
 
 interface PaymentInfo {
   reference: string
-  status: "pending" | "succeeded" | "failed" | "expired"
+  status: "pending" | "succeeded" | "failed" | "expired" | "underpaid"
   amount: number
+  amount_paid: number | null
+  overpaid_amount: number | null
   currency: string
   account_number: string | null
   account_bank_name: string | null
@@ -44,7 +46,7 @@ export default function PayPage() {
         const supabase = await createClient()
         const { data, error } = await supabase
           .from("payments")
-          .select("reference, status, amount, currency, account_number, account_bank_name, account_expiration")
+          .select("reference, status, amount, amount_paid, overpaid_amount, currency, account_number, account_bank_name, account_expiration")
           .eq("order_id", orderId)
           .order("created_at", { ascending: false })
           .limit(1)
@@ -145,12 +147,36 @@ export default function PayPage() {
   }
 
   if (payment.status === "succeeded") {
+    const overpaid = Number(payment.overpaid_amount) || 0
     return (
       <div className="container mx-auto px-4 py-16 text-center">
         <CheckCircle2 className="mx-auto h-16 w-16 text-green-500 mb-4" />
         <h2 className="text-2xl font-bold mb-2">Payment received!</h2>
         <p className="text-muted-foreground mb-8">
           Thank you. Your order is confirmed and we'll get it ready for you.
+        </p>
+        {overpaid > 0 && (
+          <div className="mx-auto mb-8 max-w-md rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            We received {payment.currency} {overpaid.toLocaleString()} more than the order total. Our team
+            will be in touch to refund the difference.
+          </div>
+        )}
+        <Button asChild>
+          <Link href="/orders">View my orders</Link>
+        </Button>
+      </div>
+    )
+  }
+
+  if (payment.status === "underpaid") {
+    const paid = Number(payment.amount_paid) || 0
+    return (
+      <div className="container mx-auto px-4 py-16 text-center">
+        <AlertTriangle className="mx-auto h-16 w-16 text-amber-500 mb-4" />
+        <h2 className="text-2xl font-bold mb-2">Payment incomplete</h2>
+        <p className="text-muted-foreground mb-8 max-w-md mx-auto">
+          We received {payment.currency} {paid.toLocaleString()} of the {formatAmount(payment)} due, so your
+          order isn't confirmed yet. Please contact us and we'll help you complete or refund this payment.
         </p>
         <Button asChild>
           <Link href="/orders">View my orders</Link>

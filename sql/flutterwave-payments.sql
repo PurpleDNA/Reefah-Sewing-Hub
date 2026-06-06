@@ -30,7 +30,9 @@ create table if not exists public.payments (
   provider                 text not null default 'flutterwave',
   flw_virtual_account_id   text,                             -- FW virtual account id (correlates incoming charges)
   flw_charge_id            text,                             -- FW charge id from the webhook
-  amount                   numeric(10,2) not null,
+  amount                   numeric(10,2) not null,            -- expected amount (the order total)
+  amount_paid              numeric(10,2),                     -- actual amount received (set on settlement)
+  overpaid_amount          numeric(10,2) not null default 0,  -- amount owed back to the customer (refund flag)
   currency                 text not null default 'NGN',
   account_number           text,
   account_bank_name        text,
@@ -100,17 +102,30 @@ end;
 $$ language plpgsql security definer;
 
 -- ----------------------------------------------------------------------------
--- mark_payment_status — idempotently transition a payment + mirror to its order
+-- mark_payment_status — idempotently transition a payment + mirror to its order,
+-- verifying the amount actually received against the expected order total.
 -- Returns true only when a change was applied (so the webhook can no-op retries).
 -- Matches by reference OR flw_virtual_account_id (whichever the webhook resolves).
+--
+-- Amount policy (p_amount_paid is the gross amount the customer transferred):
+--   * underpaid (paid < expected)  -> NOT fulfilled. Payment + order flagged
+--     'underpaid' for manual review; stock is not committed, status not advanced.
+--   * exact or overpaid            -> accepted as 'paid'. Any surplus is recorded
+--     in payments.overpaid_amount so an admin can refund it (accept-and-flag).
+--   * p_amount_paid null           -> skip the check, behave as before (don't drop
+--     a real payment over a missing field).
 -- ----------------------------------------------------------------------------
+drop function if exists public.mark_payment_status(text, text, text);
+
 create or replace function public.mark_payment_status(
   p_reference     text,
   p_flw_charge_id text,
-  p_status        text
+  p_status        text,
+  p_amount_paid   numeric default null
 ) returns boolean as $$
 declare
-  v_payment public.payments%rowtype;
+  v_payment  public.payments%rowtype;
+  v_overpaid numeric := 0;
 begin
   select * into v_payment
   from public.payments
@@ -135,14 +150,54 @@ begin
     return false;
   end if;
 
+  -- Non-success outcomes (failed / expired): record and mirror, no amount logic.
+  if p_status <> 'succeeded' then
+    update public.payments
+       set status        = p_status,
+           amount_paid    = coalesce(p_amount_paid, amount_paid),
+           flw_charge_id  = coalesce(p_flw_charge_id, flw_charge_id),
+           updated_at     = now()
+     where id = v_payment.id;
+
+    update public.orders
+       set payment_status = p_status,
+           updated_at     = now()
+     where id = v_payment.order_id;
+
+    return true;
+  end if;
+
+  -- Underpayment: settled successfully but for less than the order total.
+  -- Do not fulfil; flag both rows 'underpaid' for an admin to resolve.
+  if p_amount_paid is not null and p_amount_paid < v_payment.amount then
+    update public.payments
+       set status        = 'underpaid',
+           amount_paid    = p_amount_paid,
+           flw_charge_id  = coalesce(p_flw_charge_id, flw_charge_id),
+           updated_at     = now()
+     where id = v_payment.id;
+
+    update public.orders
+       set payment_status = 'underpaid',
+           updated_at     = now()
+     where id = v_payment.order_id;
+
+    return true;
+  end if;
+
+  -- Exact payment or overpayment: accept. Record any surplus as a refund owed.
+  v_overpaid := greatest(coalesce(p_amount_paid, v_payment.amount) - v_payment.amount, 0);
+
   update public.payments
-     set status        = p_status,
-         flw_charge_id  = coalesce(p_flw_charge_id, flw_charge_id),
-         updated_at     = now()
+     set status          = 'succeeded',
+         amount_paid      = coalesce(p_amount_paid, amount),
+         overpaid_amount  = v_overpaid,
+         flw_charge_id    = coalesce(p_flw_charge_id, flw_charge_id),
+         updated_at       = now()
    where id = v_payment.id;
 
   update public.orders
-     set payment_status = case when p_status = 'succeeded' then 'paid' else p_status end,
+     set payment_status = 'paid',
          updated_at     = now()
    where id = v_payment.order_id;
 
@@ -154,4 +209,4 @@ $$ language plpgsql security definer;
 -- Grants — anon is the role the webhook (no session) and browser client run as.
 -- ----------------------------------------------------------------------------
 grant execute on function public.create_payment(uuid, text, numeric, text, text, text, text, timestamptz) to anon, authenticated;
-grant execute on function public.mark_payment_status(text, text, text)                                   to anon, authenticated;
+grant execute on function public.mark_payment_status(text, text, text, numeric)                           to anon, authenticated;

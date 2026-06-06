@@ -20,8 +20,13 @@ export default async function ProductsPage({
   // Fetch categories for filter
   const { data: categories } = await supabase.from("categories").select("*")
 
-  // Build query for products
-  let query = supabase.from("products").select("*, categories(name, slug)")
+  // Build query for products.
+  // When filtering by category we must use an inner join (`categories!inner`),
+  // otherwise PostgREST left-joins and the embedded filter only nulls out the
+  // category on non-matching rows instead of excluding those products.
+  let query = supabase
+    .from("products")
+    .select(category ? "*, categories!inner(name, slug)" : "*, categories(name, slug)")
 
   // Apply category filter if provided
   if (category) {
