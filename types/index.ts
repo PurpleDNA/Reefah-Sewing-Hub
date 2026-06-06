@@ -27,6 +27,36 @@ export interface CartItem {
   quantity: number
 }
 
+export interface ContactMessage {
+  id: string
+  name: string
+  email: string
+  subject: string
+  message: string
+  is_read: boolean
+  created_at: string
+}
+
+export interface AboutValue {
+  title: string
+  description: string
+}
+
+export interface StoreSettings {
+  store_name: string
+  store_email: string
+  store_phone: string
+  store_address: string
+  store_description: string
+  enable_reviews: boolean
+  enable_guest_checkout: boolean
+  facebook_url: string
+  instagram_url: string
+  about_story: string
+  about_mission: string
+  about_values: AboutValue[]
+}
+
 export interface Review {
   id: string
   product_id: string

@@ -1,7 +1,11 @@
 import Link from "next/link"
 import { Facebook, Instagram, Phone, Mail, MapPin } from "lucide-react"
+import { getStoreSettings } from "@/lib/settings"
 
-export default function Footer() {
+export default async function Footer() {
+  const settings = await getStoreSettings()
+  const telHref = `tel:${settings.store_phone.replace(/\s+/g, "")}`
+
   return (
     <footer className="relative bg-orange-950 text-white mt-16">
       {/* stitch accent across the top */}
@@ -23,13 +27,13 @@ export default function Footer() {
               </span>
             </Link>
             <p className="text-white/60 mt-4 text-sm leading-relaxed">
-              Your one-stop sewing shop for beads, stones, trimming, threads and everything you need to create.
+              {settings.store_description}
             </p>
             <div className="flex space-x-3 mt-5">
-              <a href="#" className="grid place-items-center h-9 w-9 rounded-full bg-white/10 hover:bg-green-600 transition-colors" aria-label="Facebook">
+              <a href={settings.facebook_url || "#"} target="_blank" rel="noopener noreferrer" className="grid place-items-center h-9 w-9 rounded-full bg-white/10 hover:bg-green-600 transition-colors" aria-label="Facebook">
                 <Facebook className="h-4 w-4" />
               </a>
-              <a href="#" className="grid place-items-center h-9 w-9 rounded-full bg-white/10 hover:bg-green-600 transition-colors" aria-label="Instagram">
+              <a href={settings.instagram_url || "#"} target="_blank" rel="noopener noreferrer" className="grid place-items-center h-9 w-9 rounded-full bg-white/10 hover:bg-green-600 transition-colors" aria-label="Instagram">
                 <Instagram className="h-4 w-4" />
               </a>
             </div>
@@ -62,16 +66,16 @@ export default function Footer() {
             <ul className="space-y-3 text-sm text-white/70">
               <li className="flex items-start gap-3">
                 <MapPin className="h-4 w-4 mt-0.5 text-green-400 shrink-0" />
-                <span>Address: TBD<br />Ghana</span>
+                <span>{settings.store_address}</span>
               </li>
               <li className="flex items-center gap-3">
                 <Phone className="h-4 w-4 text-green-400 shrink-0" />
-                <a href="tel:+233246570570" className="hover:text-white transition-colors">+233 24 657 0570</a>
+                <a href={telHref} className="hover:text-white transition-colors">{settings.store_phone}</a>
               </li>
               <li className="flex items-center gap-3">
                 <Mail className="h-4 w-4 text-green-400 shrink-0" />
-                <a href="mailto:contact@reefasewinghub.com" className="hover:text-white transition-colors break-all">
-                  contact@reefasewinghub.com
+                <a href={`mailto:${settings.store_email}`} className="hover:text-white transition-colors break-all">
+                  {settings.store_email}
                 </a>
               </li>
             </ul>

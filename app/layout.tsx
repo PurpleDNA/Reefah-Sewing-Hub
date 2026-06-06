@@ -2,7 +2,6 @@ import type React from "react"
 import type { Metadata } from "next"
 import { Fraunces, Hanken_Grotesk } from "next/font/google"
 import "./globals.css"
-import { ThemeProvider } from "@/components/theme-provider"
 import Header from "@/components/header"
 import Footer from "@/components/footer"
 import { Toaster } from "@/components/ui/toaster"
@@ -29,6 +28,9 @@ export const metadata: Metadata = {
   description:
     "Beads, stones, trimming, threads, accessories & sewing tools that bring your designs to life. Wholesale & retail in Ghana.",
   generator: "v0.dev",
+  icons: {
+    icon: "/Reefa-LOGO.png",
+  },
 }
 
 export default function RootLayout({
@@ -38,25 +40,20 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head>
-        <link rel="icon" href="/favicon.png" />
-      </head>
       <body className={`${fontSans.variable} ${fontDisplay.variable} font-sans`}>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-          <AuthProvider>
-            <CartProvider>
-              <Suspense fallback={<div>Loading...</div>}>
-                <div className="flex min-h-screen flex-col">
-                  <Header />
-                  <main className="flex-1">{children}</main>
-                  <Footer />
-                  <Toaster />
-                </div>
-              </Suspense>
-            </CartProvider>
-          </AuthProvider>
-          <VercelAnalytics />
-        </ThemeProvider>
+        <AuthProvider>
+          <CartProvider>
+            <Suspense fallback={<div>Loading...</div>}>
+              <div className="flex min-h-screen flex-col">
+                <Header />
+                <main className="flex-1">{children}</main>
+                <Footer />
+                <Toaster />
+              </div>
+            </Suspense>
+          </CartProvider>
+        </AuthProvider>
+        <VercelAnalytics />
       </body>
     </html>
   )
