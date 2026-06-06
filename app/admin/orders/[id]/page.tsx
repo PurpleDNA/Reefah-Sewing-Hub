@@ -29,6 +29,19 @@ export default async function OrderDetails({ params }: { params: { id: string } 
     .select("*, products(name, image_url)")
     .eq("order_id", order.id)
 
+  // Latest payment attempt — drives the payment summary + over/under-payment flags.
+  const { data: payment } = await supabase
+    .from("payments")
+    .select("status, amount, amount_paid, overpaid_amount, currency")
+    .eq("order_id", order.id)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  const cur = payment?.currency || order.currency || "GH₵"
+  const overpaid = Number(payment?.overpaid_amount) || 0
+  const isUnderpaid = payment?.status === "underpaid" || order.payment_status === "underpaid"
+
   return (
     <div>
       <div className="flex items-center gap-4 mb-8">
@@ -135,6 +148,64 @@ export default async function OrderDetails({ params }: { params: { id: string } 
                   <span>GH₵{order.total.toLocaleString()}</span>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+
+          <Card className="mb-8">
+            <CardHeader>
+              <CardTitle>Payment</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Payment status</span>
+                  <Badge
+                    variant="outline"
+                    className={
+                      order.payment_status === "paid"
+                        ? "bg-green-50 text-green-700"
+                        : isUnderpaid
+                          ? "bg-amber-50 text-amber-700"
+                          : order.payment_status === "failed" || order.payment_status === "expired"
+                            ? "bg-red-50 text-red-700"
+                            : "bg-muted text-muted-foreground"
+                    }
+                  >
+                    {isUnderpaid ? "Underpaid" : order.payment_status || "—"}
+                  </Badge>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Expected</span>
+                  <span>
+                    {cur} {Number(payment?.amount ?? order.total).toLocaleString()}
+                  </span>
+                </div>
+                {payment?.amount_paid != null && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Received</span>
+                    <span>
+                      {cur} {Number(payment.amount_paid).toLocaleString()}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {overpaid > 0 && (
+                <div className="mt-4 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                  Customer overpaid by{" "}
+                  <span className="font-semibold">
+                    {cur} {overpaid.toLocaleString()}
+                  </span>
+                  . Refund the difference.
+                </div>
+              )}
+
+              {isUnderpaid && (
+                <div className="mt-4 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                  Customer paid less than the order total. This order is not fulfilled — collect the balance
+                  or refund what was received.
+                </div>
+              )}
             </CardContent>
           </Card>
 

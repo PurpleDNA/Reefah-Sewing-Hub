@@ -62,6 +62,13 @@ export async function POST(request: Request) {
 
     const succeeded =
       charge?.status === "succeeded" || charge?.status === "successful";
+    // Gross amount the customer actually transferred. mark_payment_status
+    // compares this to the order total (underpaid -> not fulfilled; overpaid ->
+    // accepted and flagged for refund). Null if we can't read it — the RPC then
+    // skips the check rather than dropping a real payment.
+    const rawAmount = charge?.amount ?? data?.amount;
+    const amountPaid =
+      rawAmount != null && !Number.isNaN(Number(rawAmount)) ? Number(rawAmount) : null;
     // Correlate to our payment row: charge reference, else webhook reference, else the
     // virtual account id. mark_payment_status matches reference OR flw_virtual_account_id.
     const reference: string | undefined =
@@ -105,6 +112,7 @@ export async function POST(request: Request) {
       p_reference: reference,
       p_flw_charge_id: String(chargeId),
       p_status: "succeeded",
+      p_amount_paid: amountPaid,
     });
 
     if (error) {
