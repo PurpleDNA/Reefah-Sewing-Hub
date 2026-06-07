@@ -1,0 +1,4 @@
+# Force LF for files that run inside the Linux container. CRLF here would break
+# the script's shebang and the Docker build on Windows checkouts.
+*.sh text eol=lf
+Dockerfile text eol=lf
