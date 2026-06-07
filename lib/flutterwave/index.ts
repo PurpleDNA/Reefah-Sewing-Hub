@@ -76,7 +76,7 @@ export async function getOrCreateCustomer(input: {
         email: input.email,
         name: { first: input.firstName || "", last: input.lastName || "" },
         ...(input.phone
-          ? { phone: { number: input.phone, country_code: "234" } }
+          ? { phone: { number: input.phone, country_code: "233" } }
           : {}),
       }),
     });

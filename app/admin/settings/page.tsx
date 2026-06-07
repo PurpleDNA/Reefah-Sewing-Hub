@@ -149,7 +149,7 @@ export default function SettingsPage() {
               <CardDescription>Manage your store details and contact information.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="store_name">Store Name</Label>
                   <Input id="store_name" name="store_name" value={settings.store_name} onChange={handleInputChange} />
@@ -202,7 +202,7 @@ export default function SettingsPage() {
               <CardDescription>Links shown in the site footer. Leave blank to hide a link.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="facebook_url">Facebook URL</Label>
                   <Input

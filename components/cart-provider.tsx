@@ -233,10 +233,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
         return [...prevItems, newItem]
       }
     })
-
-    toast({
-      description: `${newItem.name} added to cart`,
-    })
   }
 
   const updateItemQuantity = async (id: string, quantity: number) => {

@@ -52,9 +52,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       .eq("is_read", false)
 
     return (
-      <div className="flex min-h-screen">
+      <div className="flex min-h-screen flex-col md:flex-row">
         <AdminSidebar unreadMessages={unreadMessages ?? 0} />
-        <div className="flex-1 p-8">{children}</div>
+        <div className="flex-1 min-w-0 p-4 md:p-8">{children}</div>
       </div>
     )
   } catch (error) {

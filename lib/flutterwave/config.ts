@@ -1,19 +1,22 @@
 // Flutterwave v4 configuration, read from server-only env vars.
-// NOTE: business is in Ghana, but we test against a Nigerian sandbox account, so
-// FLUTTERWAVE_CURRENCY defaults to "NGN". Switch to "GHS" at go-live.
+// NOTE: the live business is in Ghana, so defaults lean to production (GHS).
+// For sandbox testing against the Nigerian developer account, override
+// FLUTTERWAVE_CURRENCY=NGN and FLUTTERWAVE_API_BASE_URL=<sandbox> in .env.local.
 
 export const flutterwaveConfig = {
   clientId: process.env.FLUTTERWAVE_CLIENT_ID,
   clientSecret: process.env.FLUTTERWAVE_CLIENT_SECRET,
   // Secret hash configured in the Flutterwave dashboard; used to verify webhooks.
   secretHash: process.env.FLUTTERWAVE_SECRET_HASH,
-  // v4 API base. Sandbox by default; set to the production base at go-live.
+  // v4 API base. Defaults to the sandbox host because the production v4 base must
+  // be confirmed from the live dashboard before go-live; set FLUTTERWAVE_API_BASE_URL
+  // to the production base in the deployed environment.
   apiBaseUrl: process.env.FLUTTERWAVE_API_BASE_URL || "https://developersandbox-api.flutterwave.com",
   // OAuth token endpoint (same for sandbox/prod).
   tokenUrl:
     process.env.FLUTTERWAVE_TOKEN_URL ||
     "https://idp.flutterwave.com/realms/flutterwave/protocol/openid-connect/token",
-  currency: process.env.FLUTTERWAVE_CURRENCY || "NGN",
+  currency: process.env.FLUTTERWAVE_CURRENCY || "GHS",
   // How long a dynamic virtual account stays open, in minutes.
   // Flutterwave requires this to be >= 60, so clamp to that floor.
   vaExpiryMinutes: Math.max(60, Number(process.env.FLUTTERWAVE_VA_EXPIRY_MINUTES || "60")),
