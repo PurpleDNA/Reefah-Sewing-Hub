@@ -5,11 +5,9 @@ import Image from "next/image"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { useCart } from "@/hooks/use-cart"
-import { useAuth } from "@/hooks/use-auth"
 import type { Product } from "@/types"
 import { toast } from "@/components/ui/use-toast"
 import { ChevronRight, Minus, Plus, ShoppingCart, Star } from "lucide-react"
-import { createClient } from "@/lib/supabase/client"
 
 interface ProductDetailProps {
   product: Product
@@ -17,87 +15,39 @@ interface ProductDetailProps {
 
 export function ProductDetail({ product }: ProductDetailProps) {
   const { addItem } = useCart()
-  const { user } = useAuth()
   const [quantity, setQuantity] = useState(1)
   const [isAdding, setIsAdding] = useState(false)
 
   const incrementQuantity = () => {
-    setQuantity((prev) => Math.min(prev + 1, 10))
+    setQuantity((prev) => Math.min(prev + 1, product.stock))
   }
 
   const decrementQuantity = () => {
     setQuantity((prev) => Math.max(prev - 1, 1))
   }
 
-  const handleAddToCart = async () => {
+  const handleAddToCart = () => {
+    if (product.stock <= 0) return
     setIsAdding(true)
 
-    try {
-      // Create cart item
-      const cartItem = {
+    setTimeout(() => {
+      // The cart provider persists to user_carts on state change; we just
+      // update local cart state here.
+      addItem({
         id: product.id,
         name: product.name,
         price: product.price,
         image: product.image_url,
         quantity,
-      }
-
-      // If user is logged in, update cart in backend first
-      if (user) {
-        const supabase = await createClient()
-
-        // Check if cart exists
-        const { data: existingCart } = await supabase.from("carts").select("items").eq("user_id", user.id).maybeSingle()
-
-        if (existingCart) {
-          // Cart exists, update items
-          const existingItems = existingCart.items || []
-          const existingItemIndex = existingItems.findIndex((item: any) => item.id === product.id)
-
-          let updatedItems
-          if (existingItemIndex > -1) {
-            // Item exists, update quantity
-            updatedItems = [...existingItems]
-            updatedItems[existingItemIndex].quantity += quantity
-          } else {
-            // Item doesn't exist, add it
-            updatedItems = [...existingItems, cartItem]
-          }
-
-          // Update cart in database
-          await supabase
-            .from("carts")
-            .update({
-              items: updatedItems,
-              updated_at: new Date().toISOString(),
-            })
-            .eq("user_id", user.id)
-        } else {
-          // Cart doesn't exist, create it
-          await supabase.from("carts").insert({
-            user_id: user.id,
-            items: [cartItem],
-          })
-        }
-      }
-
-      // Update local cart state
-      addItem(cartItem)
+      })
 
       toast({
         title: "Added to cart",
         description: `${quantity} x ${product.name} has been added to your cart.`,
       })
-    } catch (error) {
-      console.error("Error adding to cart:", error)
-      toast({
-        title: "Error",
-        description: "Failed to add item to cart. Please try again.",
-        variant: "destructive",
-      })
-    } finally {
+
       setIsAdding(false)
-    }
+    }, 500)
   }
 
   return (
@@ -141,6 +91,11 @@ export function ProductDetail({ product }: ProductDetailProps) {
           {product.sale_price && (
             <p className="text-sm text-muted-foreground line-through">GH₵{product.sale_price.toFixed(2)}</p>
           )}
+          {product.stock > 0 ? (
+            <p className="text-sm font-medium text-green-600 mt-2">{product.stock} in stock</p>
+          ) : (
+            <p className="text-sm font-medium text-red-600 mt-2">Out of stock</p>
+          )}
         </div>
 
         <div className="mb-6">
@@ -150,11 +105,21 @@ export function ProductDetail({ product }: ProductDetailProps) {
         <div className="mb-6">
           <p className="text-sm font-medium mb-2">Quantity</p>
           <div className="flex items-center">
-            <Button variant="outline" size="icon" onClick={decrementQuantity} disabled={quantity <= 1}>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={decrementQuantity}
+              disabled={quantity <= 1 || product.stock <= 0}
+            >
               <Minus className="h-4 w-4" />
             </Button>
             <span className="w-12 text-center">{quantity}</span>
-            <Button variant="outline" size="icon" onClick={incrementQuantity} disabled={quantity >= 10}>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={incrementQuantity}
+              disabled={quantity >= product.stock || product.stock <= 0}
+            >
               <Plus className="h-4 w-4" />
             </Button>
           </div>
@@ -165,10 +130,12 @@ export function ProductDetail({ product }: ProductDetailProps) {
             className="flex-1 bg-green-600 hover:bg-green-700"
             size="lg"
             onClick={handleAddToCart}
-            disabled={isAdding}
+            disabled={isAdding || product.stock <= 0}
           >
             {isAdding ? (
               "Adding to Cart..."
+            ) : product.stock <= 0 ? (
+              "Out of Stock"
             ) : (
               <>
                 <ShoppingCart className="mr-2 h-5 w-5" /> Add to Cart
