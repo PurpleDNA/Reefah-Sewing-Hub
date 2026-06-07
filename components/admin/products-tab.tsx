@@ -18,9 +18,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Badge } from "@/components/ui/badge"
 import { toast } from "@/components/ui/use-toast"
 import { ImageUpload, uploadImage } from "@/components/admin/image-upload"
 import { Loader2, Plus, Pencil, Trash2, Package } from "lucide-react"
+import Image from "next/image"
 
 interface Product {
   id: string
@@ -510,46 +512,41 @@ export default function ProductsTab() {
             <TableHeader>
               <TableRow>
                 <TableHead className="w-[80px]">Image</TableHead>
-                <TableHead>Product</TableHead>
+                <TableHead>Name</TableHead>
                 <TableHead>Category</TableHead>
                 <TableHead>Price</TableHead>
                 <TableHead>Stock</TableHead>
+                <TableHead>Status</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {products.map((product) => (
                 <TableRow key={product.id}>
-                  <TableCell className="font-medium">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-md bg-muted overflow-hidden">
-                        {product.image_url ? (
-                          <img
-                            src={product.image_url || "/placeholder.svg"}
-                            alt={product.name}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-muted">
-                            <Package className="h-5 w-5 text-muted-foreground" />
-                          </div>
-                        )}
-                      </div>
-                      <span>{product.name}</span>
+                  <TableCell>
+                    <div className="relative h-10 w-10">
+                      <Image
+                        src={product.image_url || "/placeholder.svg?height=40&width=40"}
+                        alt={product.name}
+                        fill
+                        className="object-cover rounded-md"
+                      />
                     </div>
                   </TableCell>
+                  <TableCell className="font-medium">{product.name}</TableCell>
                   <TableCell>{product.categories?.name || "Uncategorized"}</TableCell>
                   <TableCell>GH₵{product.price.toLocaleString()}</TableCell>
+                  <TableCell>{product.stock}</TableCell>
                   <TableCell>
-                    <span
-                      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                        product.stock > 0
-                          ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
-                          : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300"
-                      }`}
-                    >
-                      {product.stock > 0 ? `${product.stock} in stock` : "Out of Stock"}
-                    </span>
+                    {product.stock > 0 ? (
+                      <Badge variant="outline" className="bg-green-50 text-green-700 hover:bg-green-100">
+                        In Stock
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="bg-red-50 text-red-700 hover:bg-red-100">
+                        Out of Stock
+                      </Badge>
+                    )}
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
