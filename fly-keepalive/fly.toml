@@ -1,6 +1,0 @@
-# Fly.io config for the Supabase keep-alive job.
-# This is a one-shot scheduled task, not a web service — it has no [http_service].
-app = "reefa-supabase-keepalive"
-primary_region = "jnb" # Johannesburg — closest Fly region to West Africa. Change if you like.
-
-[build]
